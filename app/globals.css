@@ -127,3 +127,33 @@
     @apply font-mono;
   }
 }
+
+/* ASCII Generator custom styles */
+.ascii-textarea {
+  font-variant-ligatures: none;
+  tab-size: 4;
+  white-space: pre;
+  overflow-wrap: normal;
+  overflow-x: auto;
+}
+
+.ascii-textarea::selection {
+  background: oklch(0.488 0.243 264.376 / 30%);
+}
+
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Checkerboard for transparent bg preview */
+[data-slot="resizable-handle"] {
+  transition: background-color 0.15s;
+}
+[data-slot="resizable-handle"]:hover {
+  background-color: oklch(0.488 0.243 264.376 / 30%);
+}
