@@ -3,12 +3,12 @@ import type { GeneratorSettings } from "./ascii-data"
 export function renderAsciiToCanvas(
   canvas: HTMLCanvasElement,
   text: string,
-  settings: GeneratorSettings
-): { width: number; height: number } {
+  settings: GeneratorSettings,
+  colors?: string[][] | null
+): { width: number; height: number; scale: number } {
   const ctx = canvas.getContext("2d")
-  if (!ctx) return { width: 0, height: 0 }
+  if (!ctx) return { width: 0, height: 0, scale: 1 }
 
-  const dpr = settings.pixelDensity
   const lines = text.split("\n")
   const maxLen = Math.max(...lines.map((l) => l.length), 1)
 
@@ -45,7 +45,14 @@ export function renderAsciiToCanvas(
   const totalW = contentW + settings.padding * 2 + fl + fs * 2 + bw * 2
   const totalH = contentH + settings.padding * 2 + ft + fb + bw * 2
 
-  // Set canvas size with DPI scaling
+  // Set canvas size with DPI scaling, capped so browsers don't silently
+  // refuse to draw (Safari's limit is ~16.7M pixels per canvas)
+  const dpr = Math.min(
+    settings.pixelDensity,
+    Math.sqrt(16_000_000 / (totalW * totalH)),
+    16_000 / totalW,
+    16_000 / totalH
+  )
   canvas.width = Math.ceil(totalW * dpr)
   canvas.height = Math.ceil(totalH * dpr)
   canvas.style.width = Math.ceil(totalW) + "px"
@@ -137,27 +144,34 @@ export function renderAsciiToCanvas(
   } else {
     ctx.fillStyle = settings.foregroundColor
   }
+  const baseFill = ctx.fillStyle
 
   // Draw each line
-  lines.forEach((line, i) => {
-    const y = textY + i * lineHeightPx
-    if (settings.letterSpacing !== 0) {
-      let x = textX
-      for (const char of line) {
-        if (char !== " ") ctx.fillText(char, x, y)
-        x += ctx.measureText(char).width + settings.letterSpacing
+  const drawLines = () =>
+    lines.forEach((line, i) => {
+      const y = textY + i * lineHeightPx
+      const rowColors = colors?.[i]
+      if (settings.letterSpacing !== 0 || rowColors) {
+        let x = textX
+        let j = 0
+        for (const char of line) {
+          if (char !== " ") {
+            if (rowColors) ctx.fillStyle = rowColors[j] ?? baseFill
+            ctx.fillText(char, x, y)
+          }
+          x += ctx.measureText(char).width + settings.letterSpacing
+          j++
+        }
+      } else {
+        ctx.fillText(line, textX, y)
       }
-    } else {
-      ctx.fillText(line, textX, y)
-    }
-  })
+    })
+  drawLines()
 
   // Extra glow pass
   if (settings.glowEnabled) {
     ctx.globalAlpha = 0.35
-    lines.forEach((line, i) => {
-      ctx.fillText(line, textX, textY + i * lineHeightPx)
-    })
+    drawLines()
     ctx.globalAlpha = 1
   }
 
@@ -203,7 +217,7 @@ export function renderAsciiToCanvas(
     ctx.putImageData(imageData, 0, 0)
   }
 
-  return { width: Math.ceil(totalW), height: Math.ceil(totalH) }
+  return { width: Math.ceil(totalW), height: Math.ceil(totalH), scale: dpr }
 }
 
 // === FRAME HELPERS ===
@@ -366,7 +380,42 @@ function adjustBrightness(hex: string, amount: number): string {
   return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`
 }
 
-export function generateSVG(text: string, settings: GeneratorSettings): string {
+function escapeXml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;")
+}
+
+// Wraps runs of same-colored characters in <tspan fill>; spaces join any run
+function coloredLine(line: string, row: string[]): string {
+  let out = ""
+  let run = ""
+  let fill = ""
+  const flush = () => {
+    if (run)
+      out += fill
+        ? `<tspan fill="${escapeXml(fill)}">${escapeXml(run)}</tspan>`
+        : escapeXml(run)
+    run = ""
+  }
+  Array.from(line).forEach((ch, j) => {
+    const c = ch === " " ? fill : (row[j] ?? fill)
+    if (c !== fill) flush()
+    fill = c
+    run += ch
+  })
+  flush()
+  return out
+}
+
+export function generateSVG(
+  text: string,
+  settings: GeneratorSettings,
+  colors?: string[][] | null
+): string {
   const lines = text.split("\n")
   const lineHeightPx = settings.fontSize * settings.lineHeight
   const width =
@@ -377,18 +426,13 @@ export function generateSVG(text: string, settings: GeneratorSettings): string {
   const textEls = lines
     .map((line, i) => {
       const y = settings.padding + (i + 1) * lineHeightPx
-      const escaped = line
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-      return `  <text x="${settings.padding}" y="${y}" fill="${settings.foregroundColor}" font-family="'${settings.fontFamily}', monospace" font-size="${settings.fontSize}" xml:space="preserve">${escaped}</text>`
+      return `  <text x="${settings.padding}" y="${y}" fill="${escapeXml(settings.foregroundColor)}" font-family="${escapeXml(`'${settings.fontFamily}', monospace`)}" font-size="${settings.fontSize}" xml:space="preserve">${colors?.[i] ? coloredLine(line, colors[i]) : escapeXml(line)}</text>`
     })
     .join("\n")
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
-  ${!settings.backgroundTransparent ? `<rect width="100%" height="100%" fill="${settings.backgroundColor}"/>` : ""}
+  ${!settings.backgroundTransparent ? `<rect width="100%" height="100%" fill="${escapeXml(settings.backgroundColor)}"/>` : ""}
 ${textEls}
 </svg>`
 }

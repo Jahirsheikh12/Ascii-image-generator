@@ -6,6 +6,7 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
+  useSyncExternalStore,
 } from "react"
 import { toast } from "sonner"
 import { useTheme } from "next-themes"
@@ -27,6 +28,7 @@ import {
   FrameCornersIcon,
   ImageIcon,
   ClipboardIcon,
+  XIcon,
 } from "@phosphor-icons/react"
 
 import { cn } from "@/lib/utils"
@@ -65,6 +67,7 @@ import {
   ResizableHandle,
 } from "@/components/ui/resizable"
 import {
+  Command,
   CommandDialog,
   CommandInput,
   CommandList,
@@ -88,6 +91,15 @@ import {
   EXPORT_FORMATS,
 } from "@/lib/ascii-data"
 import { renderAsciiToCanvas, generateSVG } from "@/lib/render-ascii"
+import {
+  type ImageAsciiOptions,
+  CHARSETS,
+  DEFAULT_IMAGE_OPTIONS,
+  MAX_COLUMNS,
+  imageToAscii,
+  isLightColor,
+  loadImageFile,
+} from "@/lib/image-to-ascii"
 
 // ─── Helpers ───
 
@@ -103,7 +115,8 @@ function downloadBlob(blob: Blob, filename: string) {
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
-  URL.revokeObjectURL(url)
+  // Safari can cancel the download if the URL is revoked synchronously
+  setTimeout(() => URL.revokeObjectURL(url), 0)
 }
 
 // ─── Main Component ───
@@ -115,11 +128,23 @@ export default function AsciiGenerator() {
   const [redoStack, setRedoStack] = useState<string[]>([])
   const [settings, setSettings] = useState<GeneratorSettings>(DEFAULT_SETTINGS)
   const [commandOpen, setCommandOpen] = useState(false)
-  const [previewDims, setPreviewDims] = useState({ width: 0, height: 0 })
+  const [previewDims, setPreviewDims] = useState({
+    width: 0,
+    height: 0,
+    scale: 1,
+  })
+  // While an image is attached, the ASCII text is derived from it
+  const [imageSource, setImageSource] = useState<{
+    canvas: HTMLCanvasElement
+    thumb: string
+    name: string
+  } | null>(null)
+  const [imageOpts, setImageOpts] =
+    useState<ImageAsciiOptions>(DEFAULT_IMAGE_OPTIONS)
+  const [dragging, setDragging] = useState(false)
   const [mobileView, setMobileView] = useState<
     "editor" | "preview" | "settings"
   >("editor")
-  const [mounted, setMounted] = useState(false)
 
   // --- Refs ---
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -128,9 +153,13 @@ export default function AsciiGenerator() {
 
   // --- Hooks ---
   const isMobile = useIsMobile()
-  const { theme, setTheme } = useTheme()
-
-  useEffect(() => setMounted(true), [])
+  const { resolvedTheme, setTheme } = useTheme()
+  // false during SSR/hydration, true on the client — avoids theme flash
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  )
 
   // --- Settings updater ---
   const updateSetting = useCallback(
@@ -143,50 +172,86 @@ export default function AsciiGenerator() {
     []
   )
 
-  // --- Text change with undo ---
+  const updateImageOpt = useCallback(
+    <K extends keyof ImageAsciiOptions>(key: K, value: ImageAsciiOptions[K]) => {
+      setImageOpts((prev) => ({ ...prev, [key]: value }))
+    },
+    []
+  )
+
+  // --- Image → ASCII ---
+  const lightBg = isLightColor(settings.backgroundColor)
+  const charAspect =
+    (settings.fontSize * 0.6 + settings.letterSpacing) /
+    (settings.fontSize * settings.lineHeight)
+  const imageResult = useMemo(
+    () =>
+      imageSource
+        ? imageToAscii(imageSource.canvas, imageOpts, charAspect, lightBg)
+        : null,
+    [imageSource, imageOpts, charAspect, lightBg]
+  )
+  const asciiText = imageResult?.text ?? text
+  const charColors = imageResult?.colors ?? null
+
+  // --- Text change with undo (editing detaches the image) ---
   const handleTextChange = useCallback(
     (newText: string) => {
-      setUndoStack((prev) => [...prev.slice(-50), text])
+      setUndoStack((prev) => [...prev.slice(-50), asciiText])
       setRedoStack([])
       setText(newText)
+      setImageSource(null)
     },
-    [text]
+    [asciiText]
   )
 
   const undo = useCallback(() => {
     if (undoStack.length === 0) return
-    setRedoStack((r) => [...r, text])
+    setRedoStack((r) => [...r, asciiText])
     setText(undoStack[undoStack.length - 1])
     setUndoStack((s) => s.slice(0, -1))
-  }, [undoStack, text])
+    setImageSource(null)
+  }, [undoStack, asciiText])
 
   const redo = useCallback(() => {
     if (redoStack.length === 0) return
-    setUndoStack((s) => [...s, text])
+    setUndoStack((s) => [...s, asciiText])
     setText(redoStack[redoStack.length - 1])
     setRedoStack((r) => r.slice(0, -1))
-  }, [redoStack, text])
+    setImageSource(null)
+  }, [redoStack, asciiText])
+
+  const detachImage = useCallback(() => {
+    setText(asciiText)
+    setImageSource(null)
+  }, [asciiText])
 
   // --- Canvas rendering (debounced) ---
   useEffect(() => {
     if (renderTimeout.current) clearTimeout(renderTimeout.current)
     renderTimeout.current = setTimeout(() => {
       if (canvasRef.current) {
-        const dims = renderAsciiToCanvas(canvasRef.current, text, settings)
+        const dims = renderAsciiToCanvas(
+          canvasRef.current,
+          asciiText,
+          settings,
+          charColors
+        )
         setPreviewDims(dims)
       }
     }, 60)
     return () => {
       if (renderTimeout.current) clearTimeout(renderTimeout.current)
     }
-  }, [text, settings])
+    // mounted/isMobile swap the layout, which mounts a fresh canvas
+  }, [asciiText, charColors, settings, mounted, isMobile])
 
   // --- Export ---
   const handleExport = useCallback(() => {
     if (!canvasRef.current) return
     const fmt = settings.exportFormat
     if (fmt === "svg") {
-      const svg = generateSVG(text, settings)
+      const svg = generateSVG(asciiText, settings, charColors)
       downloadBlob(new Blob([svg], { type: "image/svg+xml" }), "ascii-art.svg")
     } else {
       const mimeMap: Record<string, string> = {
@@ -202,14 +267,17 @@ export default function AsciiGenerator() {
       const quality = fmt === "jpeg" ? settings.jpegQuality / 100 : undefined
       canvasRef.current.toBlob(
         (blob) => {
-          if (blob) downloadBlob(blob, `ascii-art.${extMap[fmt]}`)
+          if (!blob) return toast.error("Export failed")
+          downloadBlob(blob, `ascii-art.${extMap[fmt]}`)
+          toast.success("Image exported!")
         },
         mimeMap[fmt],
         quality
       )
+      return
     }
     toast.success("Image exported!")
-  }, [text, settings])
+  }, [asciiText, charColors, settings])
 
   // --- Copy image ---
   const copyImage = useCallback(async () => {
@@ -230,25 +298,52 @@ export default function AsciiGenerator() {
   }, [])
 
   const copyText = useCallback(() => {
-    navigator.clipboard.writeText(text)
-    toast.success("ASCII art copied!")
-  }, [text])
+    navigator.clipboard.writeText(asciiText).then(
+      () => toast.success("ASCII art copied!"),
+      () => toast.error("Failed to copy text")
+    )
+  }, [asciiText])
 
-  // --- Import file ---
+  // --- Import file (image → converted, text → loaded as-is) ---
   const importFile = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0]
-      if (!file) return
-      const reader = new FileReader()
-      reader.onload = () => {
-        handleTextChange(reader.result as string)
+    async (file: File) => {
+      if (file.type.startsWith("image/")) {
+        try {
+          const { canvas, thumb } = await loadImageFile(file)
+          setUndoStack((prev) => [...prev.slice(-50), asciiText])
+          setRedoStack([])
+          setImageSource({ canvas, thumb, name: file.name || "Pasted image" })
+          toast.success("Image converted to ASCII!")
+        } catch {
+          toast.error("Couldn't read that image")
+        }
+      } else if (
+        !file.type ||
+        file.type.startsWith("text/") ||
+        /\.(txt|asc)$/i.test(file.name)
+      ) {
+        handleTextChange(await file.text())
         toast.success("File imported!")
+      } else {
+        toast.error("Unsupported file. Use an image or a .txt file")
       }
-      reader.readAsText(file)
-      e.target.value = ""
     },
-    [handleTextChange]
+    [asciiText, handleTextChange]
   )
+
+  // --- Paste an image anywhere ---
+  useEffect(() => {
+    const handler = (e: ClipboardEvent) => {
+      const file = Array.from(e.clipboardData?.files ?? []).find((f) =>
+        f.type.startsWith("image/")
+      )
+      if (!file) return
+      e.preventDefault()
+      importFile(file)
+    }
+    window.addEventListener("paste", handler)
+    return () => window.removeEventListener("paste", handler)
+  }, [importFile])
 
   // --- Theme application ---
   const applyTheme = useCallback((t: ColorTheme) => {
@@ -267,15 +362,17 @@ export default function AsciiGenerator() {
   const shareSettings = useCallback(() => {
     try {
       const encoded = btoa(
-        encodeURIComponent(JSON.stringify({ text, settings }))
+        encodeURIComponent(JSON.stringify({ text: asciiText, settings }))
       )
       const url = `${window.location.origin}${window.location.pathname}#${encoded}`
-      navigator.clipboard.writeText(url)
-      toast.success("Share link copied!")
+      navigator.clipboard.writeText(url).then(
+        () => toast.success("Share link copied!"),
+        () => toast.error("Failed to copy share link")
+      )
     } catch {
       toast.error("Failed to generate share link")
     }
-  }, [text, settings])
+  }, [asciiText, settings])
 
   // --- Load from URL hash ---
   useEffect(() => {
@@ -283,11 +380,23 @@ export default function AsciiGenerator() {
       const hash = window.location.hash.slice(1)
       if (hash) {
         const data = JSON.parse(decodeURIComponent(atob(hash)))
-        if (data.text) setText(data.text)
-        if (data.settings)
-          setSettings((prev) => ({ ...prev, ...data.settings }))
+        // Syncing from the URL (external system) on mount is the intended use
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        if (typeof data.text === "string") setText(data.text)
+        if (data.settings && typeof data.settings === "object") {
+          // Shared links are untrusted: keep only known keys of the right type
+          const safe = Object.fromEntries(
+            Object.entries(data.settings).filter(
+              ([k, v]) =>
+                k in DEFAULT_SETTINGS &&
+                typeof v === typeof DEFAULT_SETTINGS[k as keyof GeneratorSettings]
+            )
+          )
+          setSettings((prev) => ({ ...prev, ...safe }))
+        }
         window.location.hash = ""
-        toast.success("Loaded from shared link!")
+        // Defer: this effect runs before the <Toaster> sibling subscribes
+        setTimeout(() => toast.success("Loaded from shared link!"))
       }
     } catch {
       // ignore
@@ -316,15 +425,151 @@ export default function AsciiGenerator() {
   }, [undo, redo, handleExport])
 
   // --- Computed ---
-  const lines = useMemo(() => text.split("\n"), [text])
+  const lines = useMemo(() => asciiText.split("\n"), [asciiText])
   const rows = lines.length
   const cols = Math.max(...lines.map((l) => l.length), 0)
-  const charCount = text.length
+  const charCount = asciiText.length
 
   // ─── Render sections ───
 
+  const imagePanel = imageSource ? (
+    <div className="max-h-[50%] shrink-0 overflow-y-auto border-b border-border/50 p-3">
+      <div className="mb-3 flex items-center gap-2">
+        <div
+          className="size-9 shrink-0 rounded-md border border-border/50 bg-contain bg-center bg-no-repeat"
+          style={{ backgroundImage: `url(${imageSource.thumb})` }}
+        />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[11px] font-medium">{imageSource.name}</p>
+          <p className="text-[10px] text-muted-foreground">
+            {imageSource.canvas.width}x{imageSource.canvas.height}px → {cols}x
+            {rows} chars
+          </p>
+        </div>
+        <TooltipButton
+          label="Replace image"
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <UploadSimpleIcon className="size-3.5" />
+        </TooltipButton>
+        <TooltipButton label="Detach image (keep text)" onClick={detachImage}>
+          <XIcon className="size-3.5" />
+        </TooltipButton>
+      </div>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+        <SettingRow label={`Columns: ${imageOpts.columns}`}>
+          <Slider
+            value={[imageOpts.columns]}
+            onValueChange={(v) => updateImageOpt("columns", sliderVal(v))}
+            min={20}
+            max={MAX_COLUMNS}
+            step={1}
+          />
+        </SettingRow>
+        <SettingRow label="Characters">
+          <Select
+            value={imageOpts.charset}
+            items={CHARSETS}
+            onValueChange={(v) => v && updateImageOpt("charset", v)}
+          >
+            <SelectTrigger className="h-7 w-full text-[11px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {CHARSETS.map((c) => (
+                <SelectItem key={c.value} value={c.value}>
+                  {c.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </SettingRow>
+        {imageOpts.charset === "custom" && (
+          <div className="col-span-2">
+            <SettingRow label="Custom ramp (light → dense)">
+              <input
+                type="text"
+                value={imageOpts.customChars}
+                onChange={(e) => updateImageOpt("customChars", e.target.value)}
+                spellCheck={false}
+                className="h-7 w-full rounded-md border border-border/50 bg-transparent px-2 font-mono text-[11px] outline-none focus:border-ring"
+              />
+            </SettingRow>
+          </div>
+        )}
+        <SettingRow label={`Brightness: ${imageOpts.brightness}`}>
+          <Slider
+            value={[imageOpts.brightness]}
+            onValueChange={(v) => updateImageOpt("brightness", sliderVal(v))}
+            min={-100}
+            max={100}
+            step={1}
+          />
+        </SettingRow>
+        <SettingRow label={`Contrast: ${imageOpts.contrast}`}>
+          <Slider
+            value={[imageOpts.contrast]}
+            onValueChange={(v) => updateImageOpt("contrast", sliderVal(v))}
+            min={-100}
+            max={100}
+            step={1}
+          />
+        </SettingRow>
+        <SettingRow label="Color" inline>
+          <Switch
+            checked={imageOpts.color}
+            onCheckedChange={(v) => updateImageOpt("color", v)}
+            size="sm"
+          />
+        </SettingRow>
+        <SettingRow label="Dither" inline>
+          <Switch
+            checked={imageOpts.dither}
+            onCheckedChange={(v) => updateImageOpt("dither", v)}
+            size="sm"
+          />
+        </SettingRow>
+        <SettingRow label="Invert" inline>
+          <Switch
+            checked={imageOpts.invert}
+            onCheckedChange={(v) => updateImageOpt("invert", v)}
+            size="sm"
+          />
+        </SettingRow>
+        <button
+          onClick={() => setImageOpts(DEFAULT_IMAGE_OPTIONS)}
+          className="justify-self-end text-[10px] text-muted-foreground hover:text-foreground"
+        >
+          Reset
+        </button>
+      </div>
+      <p className="mt-3 text-[10px] text-muted-foreground/60">
+        Editing the text below detaches the image.
+      </p>
+    </div>
+  ) : (
+    <div className="shrink-0 border-b border-border/50 p-3">
+      <button
+        onClick={() => fileInputRef.current?.click()}
+        className="flex w-full items-center gap-3 rounded-md border border-dashed border-border px-3 py-3 text-left transition-all hover:border-primary/50 hover:bg-primary/5"
+      >
+        <ImageIcon className="size-5 shrink-0 text-primary" />
+        <span>
+          <span className="block text-[11px] font-medium">
+            Convert an image to ASCII
+          </span>
+          <span className="block text-[10px] text-muted-foreground">
+            Click, drop or paste an image
+          </span>
+        </span>
+      </button>
+    </div>
+  )
+
   const editorPanel = (
     <div className="flex h-full flex-col">
+      {imagePanel}
+
       {/* Templates */}
       <div className="shrink-0 border-b border-border/50 p-3">
         <p className="mb-2 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
@@ -346,7 +591,7 @@ export default function AsciiGenerator() {
       {/* Textarea */}
       <div className="relative flex-1 overflow-hidden">
         <textarea
-          value={text}
+          value={asciiText}
           onChange={(e) => handleTextChange(e.target.value)}
           spellCheck={false}
           className="ascii-textarea size-full resize-none border-none bg-transparent p-4 font-mono text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground/40"
@@ -366,7 +611,7 @@ export default function AsciiGenerator() {
         <TooltipButton label="Copy text" onClick={copyText}>
           <CopyIcon className="size-3.5" />
         </TooltipButton>
-        <TooltipButton label="Import .txt file" onClick={() => fileInputRef.current?.click()}>
+        <TooltipButton label="Import image or .txt file" onClick={() => fileInputRef.current?.click()}>
           <UploadSimpleIcon className="size-3.5" />
         </TooltipButton>
         <TooltipButton
@@ -412,9 +657,9 @@ export default function AsciiGenerator() {
         <TabsContent value="customize" className="flex-1 overflow-hidden">
           <ScrollArea className="h-full">
             <div className="p-3">
-              <Accordion multiple defaultValue={[0, 1]}>
+              <Accordion multiple defaultValue={["font", "colors"]}>
                 {/* Font Settings */}
-                <AccordionItem>
+                <AccordionItem value="font">
                   <AccordionTrigger className="py-2 text-[11px]">
                     <span className="flex items-center gap-2">
                       <TextTIcon className="size-3.5 text-muted-foreground" />
@@ -480,7 +725,7 @@ export default function AsciiGenerator() {
                 </AccordionItem>
 
                 {/* Colors */}
-                <AccordionItem>
+                <AccordionItem value="colors">
                   <AccordionTrigger className="py-2 text-[11px]">
                     <span className="flex items-center gap-2">
                       <PaletteIcon className="size-3.5 text-muted-foreground" />
@@ -592,7 +837,7 @@ export default function AsciiGenerator() {
                 </AccordionItem>
 
                 {/* Canvas */}
-                <AccordionItem>
+                <AccordionItem value="canvas">
                   <AccordionTrigger className="py-2 text-[11px]">
                     <span className="flex items-center gap-2">
                       <SlidersHorizontalIcon className="size-3.5 text-muted-foreground" />
@@ -635,7 +880,7 @@ export default function AsciiGenerator() {
                 </AccordionItem>
 
                 {/* Effects */}
-                <AccordionItem>
+                <AccordionItem value="effects">
                   <AccordionTrigger className="py-2 text-[11px]">
                     <span className="flex items-center gap-2">
                       <SparkleIcon className="size-3.5 text-muted-foreground" />
@@ -748,7 +993,7 @@ export default function AsciiGenerator() {
                 </AccordionItem>
 
                 {/* Border & Frame */}
-                <AccordionItem>
+                <AccordionItem value="frame">
                   <AccordionTrigger className="py-2 text-[11px]">
                     <span className="flex items-center gap-2">
                       <FrameCornersIcon className="size-3.5 text-muted-foreground" />
@@ -760,6 +1005,7 @@ export default function AsciiGenerator() {
                       <SettingRow label="Frame">
                         <Select
                           value={settings.frameTemplate}
+                          items={FRAME_TEMPLATES}
                           onValueChange={(v) =>
                             v && updateSetting("frameTemplate", v)
                           }
@@ -779,6 +1025,7 @@ export default function AsciiGenerator() {
                       <SettingRow label="Border Style">
                         <Select
                           value={settings.borderStyle}
+                          items={BORDER_STYLES}
                           onValueChange={(v) =>
                             v && updateSetting("borderStyle", v)
                           }
@@ -899,8 +1146,10 @@ export default function AsciiGenerator() {
                   {settings.pixelDensity}x
                 </p>
                 <p>
-                  Actual: {previewDims.width * settings.pixelDensity}x
-                  {previewDims.height * settings.pixelDensity}px
+                  Actual: {Math.ceil(previewDims.width * previewDims.scale)}x
+                  {Math.ceil(previewDims.height * previewDims.scale)}px
+                  {previewDims.scale < settings.pixelDensity &&
+                    " (scale reduced to fit browser limits)"}
                 </p>
               </div>
             </div>
@@ -924,7 +1173,12 @@ export default function AsciiGenerator() {
 
   return (
     <TooltipProvider delay={300}>
-      <div className="flex h-dvh flex-col overflow-hidden bg-background text-foreground">
+      <div
+        className="flex h-dvh flex-col overflow-hidden bg-background text-foreground"
+        onDragEnter={(e) => {
+          if (e.dataTransfer.types.includes("Files")) setDragging(true)
+        }}
+      >
         {/* ── Header ── */}
         <header className="flex h-11 shrink-0 items-center justify-between border-b border-border/50 px-4">
           <div className="flex items-center gap-3">
@@ -945,12 +1199,12 @@ export default function AsciiGenerator() {
               <CommandIcon className="size-3.5" />
             </TooltipButton>
             <TooltipButton
-              label={theme === "dark" ? "Light mode" : "Dark mode"}
+              label={resolvedTheme === "dark" ? "Light mode" : "Dark mode"}
               onClick={() =>
-                setTheme(theme === "dark" ? "light" : "dark")
+                setTheme(resolvedTheme === "dark" ? "light" : "dark")
               }
             >
-              {theme === "dark" ? (
+              {resolvedTheme === "dark" ? (
                 <SunIcon className="size-3.5" />
               ) : (
                 <MoonIcon className="size-3.5" />
@@ -983,9 +1237,16 @@ export default function AsciiGenerator() {
         <main className="flex-1 overflow-hidden">
           {isMobile ? (
             <div className="h-full">
-              {mobileView === "editor" && editorPanel}
-              {mobileView === "preview" && previewPanel}
-              {mobileView === "settings" && customizerPanel}
+              {/* Keep all panels mounted so the canvas exists for export */}
+              <div className={cn("h-full", mobileView !== "editor" && "hidden")}>
+                {editorPanel}
+              </div>
+              <div className={cn("h-full", mobileView !== "preview" && "hidden")}>
+                {previewPanel}
+              </div>
+              <div className={cn("h-full", mobileView !== "settings" && "hidden")}>
+                {customizerPanel}
+              </div>
             </div>
           ) : (
             <ResizablePanelGroup orientation="horizontal" className="h-full">
@@ -1027,109 +1288,144 @@ export default function AsciiGenerator() {
 
         {/* ── Command Palette ── */}
         <CommandDialog open={commandOpen} onOpenChange={setCommandOpen}>
-          <CommandInput placeholder="Search commands..." />
-          <CommandList>
-            <CommandEmpty>No results found.</CommandEmpty>
-            <CommandGroup heading="Templates">
-              {ASCII_TEMPLATES.map((t) => (
+          <Command>
+            <CommandInput placeholder="Search commands..." />
+            <CommandList>
+              <CommandEmpty>No results found.</CommandEmpty>
+              <CommandGroup heading="Templates">
+                {ASCII_TEMPLATES.map((t) => (
+                  <CommandItem
+                    key={t.name}
+                    onSelect={() => {
+                      handleTextChange(t.art)
+                      setCommandOpen(false)
+                    }}
+                  >
+                    <ImageIcon className="size-4" />
+                    Insert {t.name}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+              <CommandSeparator />
+              <CommandGroup heading="Themes">
+                {COLOR_THEMES.map((t) => (
+                  <CommandItem
+                    key={t.name}
+                    onSelect={() => {
+                      applyTheme(t)
+                      setCommandOpen(false)
+                    }}
+                  >
+                    <PaletteIcon className="size-4" />
+                    {t.name} theme
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+              <CommandSeparator />
+              <CommandGroup heading="Actions">
                 <CommandItem
-                  key={t.name}
                   onSelect={() => {
-                    handleTextChange(t.art)
+                    fileInputRef.current?.click()
                     setCommandOpen(false)
                   }}
                 >
-                  <ImageIcon className="size-4" />
-                  Insert {t.name}
+                  <UploadSimpleIcon className="size-4" />
+                  Convert Image to ASCII
                 </CommandItem>
-              ))}
-            </CommandGroup>
-            <CommandSeparator />
-            <CommandGroup heading="Themes">
-              {COLOR_THEMES.map((t) => (
                 <CommandItem
-                  key={t.name}
                   onSelect={() => {
-                    applyTheme(t)
+                    handleExport()
                     setCommandOpen(false)
                   }}
                 >
-                  <PaletteIcon className="size-4" />
-                  {t.name} theme
+                  <DownloadSimpleIcon className="size-4" />
+                  Export Image
+                  <CommandShortcut>Ctrl+S</CommandShortcut>
                 </CommandItem>
-              ))}
-            </CommandGroup>
-            <CommandSeparator />
-            <CommandGroup heading="Actions">
-              <CommandItem
-                onSelect={() => {
-                  handleExport()
-                  setCommandOpen(false)
-                }}
-              >
-                <DownloadSimpleIcon className="size-4" />
-                Export Image
-                <CommandShortcut>Ctrl+S</CommandShortcut>
-              </CommandItem>
-              <CommandItem
-                onSelect={() => {
-                  copyImage()
-                  setCommandOpen(false)
-                }}
-              >
-                <ClipboardIcon className="size-4" />
-                Copy Image to Clipboard
-              </CommandItem>
-              <CommandItem
-                onSelect={() => {
-                  copyText()
-                  setCommandOpen(false)
-                }}
-              >
-                <CopyIcon className="size-4" />
-                Copy ASCII Text
-              </CommandItem>
-              <CommandItem
-                onSelect={() => {
-                  shareSettings()
-                  setCommandOpen(false)
-                }}
-              >
-                <ShareNetworkIcon className="size-4" />
-                Copy Share Link
-              </CommandItem>
-              <CommandItem
-                onSelect={() => {
-                  undo()
-                  setCommandOpen(false)
-                }}
-              >
-                <ArrowCounterClockwiseIcon className="size-4" />
-                Undo
-                <CommandShortcut>Ctrl+Z</CommandShortcut>
-              </CommandItem>
-              <CommandItem
-                onSelect={() => {
-                  redo()
-                  setCommandOpen(false)
-                }}
-              >
-                <ArrowClockwiseIcon className="size-4" />
-                Redo
-                <CommandShortcut>Ctrl+Shift+Z</CommandShortcut>
-              </CommandItem>
-            </CommandGroup>
-          </CommandList>
+                <CommandItem
+                  onSelect={() => {
+                    copyImage()
+                    setCommandOpen(false)
+                  }}
+                >
+                  <ClipboardIcon className="size-4" />
+                  Copy Image to Clipboard
+                </CommandItem>
+                <CommandItem
+                  onSelect={() => {
+                    copyText()
+                    setCommandOpen(false)
+                  }}
+                >
+                  <CopyIcon className="size-4" />
+                  Copy ASCII Text
+                </CommandItem>
+                <CommandItem
+                  onSelect={() => {
+                    shareSettings()
+                    setCommandOpen(false)
+                  }}
+                >
+                  <ShareNetworkIcon className="size-4" />
+                  Copy Share Link
+                </CommandItem>
+                <CommandItem
+                  onSelect={() => {
+                    undo()
+                    setCommandOpen(false)
+                  }}
+                >
+                  <ArrowCounterClockwiseIcon className="size-4" />
+                  Undo
+                  <CommandShortcut>Ctrl+Z</CommandShortcut>
+                </CommandItem>
+                <CommandItem
+                  onSelect={() => {
+                    redo()
+                    setCommandOpen(false)
+                  }}
+                >
+                  <ArrowClockwiseIcon className="size-4" />
+                  Redo
+                  <CommandShortcut>Ctrl+Shift+Z</CommandShortcut>
+                </CommandItem>
+              </CommandGroup>
+            </CommandList>
+          </Command>
         </CommandDialog>
 
         {/* Hidden file input */}
         <input
           ref={fileInputRef}
           type="file"
-          accept=".txt,.asc"
+          accept="image/*,.txt,.asc"
           className="hidden"
-          onChange={importFile}
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            if (file) importFile(file)
+            e.target.value = ""
+          }}
         />
+
+        {/* Drop overlay — covers the window so dragleave only fires on exit */}
+        {dragging && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
+            onDragOver={(e) => e.preventDefault()}
+            onDragLeave={() => setDragging(false)}
+            onDrop={(e) => {
+              e.preventDefault()
+              setDragging(false)
+              const file = e.dataTransfer.files[0]
+              if (file) importFile(file)
+            }}
+          >
+            <div className="pointer-events-none rounded-xl border-2 border-dashed border-primary px-10 py-8 text-center">
+              <ImageIcon className="mx-auto mb-2 size-8 text-primary" />
+              <p className="text-sm font-medium">Drop to convert to ASCII</p>
+            </div>
+          </div>
+        )}
       </div>
     </TooltipProvider>
   )
@@ -1215,10 +1511,12 @@ function ColorInput({
       </div>
       <input
         type="text"
-        value={value}
+        // Uncontrolled + keyed so partial hex while typing never reaches the canvas
+        key={value}
+        defaultValue={value}
         onChange={(e) => {
           const v = e.target.value
-          if (/^#[0-9a-fA-F]{0,6}$/.test(v)) onChange(v)
+          if (/^#[0-9a-fA-F]{6}$/.test(v)) onChange(v)
         }}
         className="h-7 w-full rounded-md border border-border/50 bg-transparent px-2 font-mono text-[11px] outline-none focus:border-ring"
         maxLength={7}
