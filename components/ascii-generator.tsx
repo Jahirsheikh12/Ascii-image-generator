@@ -6,6 +6,7 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
+  useSyncExternalStore,
 } from "react"
 import { toast } from "sonner"
 import { useTheme } from "next-themes"
@@ -65,6 +66,7 @@ import {
   ResizableHandle,
 } from "@/components/ui/resizable"
 import {
+  Command,
   CommandDialog,
   CommandInput,
   CommandList,
@@ -103,7 +105,8 @@ function downloadBlob(blob: Blob, filename: string) {
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
-  URL.revokeObjectURL(url)
+  // Safari can cancel the download if the URL is revoked synchronously
+  setTimeout(() => URL.revokeObjectURL(url), 0)
 }
 
 // ─── Main Component ───
@@ -119,7 +122,6 @@ export default function AsciiGenerator() {
   const [mobileView, setMobileView] = useState<
     "editor" | "preview" | "settings"
   >("editor")
-  const [mounted, setMounted] = useState(false)
 
   // --- Refs ---
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -128,9 +130,13 @@ export default function AsciiGenerator() {
 
   // --- Hooks ---
   const isMobile = useIsMobile()
-  const { theme, setTheme } = useTheme()
-
-  useEffect(() => setMounted(true), [])
+  const { resolvedTheme, setTheme } = useTheme()
+  // false during SSR/hydration, true on the client — avoids theme flash
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  )
 
   // --- Settings updater ---
   const updateSetting = useCallback(
@@ -179,7 +185,8 @@ export default function AsciiGenerator() {
     return () => {
       if (renderTimeout.current) clearTimeout(renderTimeout.current)
     }
-  }, [text, settings])
+    // mounted/isMobile swap the layout, which mounts a fresh canvas
+  }, [text, settings, mounted, isMobile])
 
   // --- Export ---
   const handleExport = useCallback(() => {
@@ -202,11 +209,14 @@ export default function AsciiGenerator() {
       const quality = fmt === "jpeg" ? settings.jpegQuality / 100 : undefined
       canvasRef.current.toBlob(
         (blob) => {
-          if (blob) downloadBlob(blob, `ascii-art.${extMap[fmt]}`)
+          if (!blob) return toast.error("Export failed")
+          downloadBlob(blob, `ascii-art.${extMap[fmt]}`)
+          toast.success("Image exported!")
         },
         mimeMap[fmt],
         quality
       )
+      return
     }
     toast.success("Image exported!")
   }, [text, settings])
@@ -230,8 +240,10 @@ export default function AsciiGenerator() {
   }, [])
 
   const copyText = useCallback(() => {
-    navigator.clipboard.writeText(text)
-    toast.success("ASCII art copied!")
+    navigator.clipboard.writeText(text).then(
+      () => toast.success("ASCII art copied!"),
+      () => toast.error("Failed to copy text")
+    )
   }, [text])
 
   // --- Import file ---
@@ -270,8 +282,10 @@ export default function AsciiGenerator() {
         encodeURIComponent(JSON.stringify({ text, settings }))
       )
       const url = `${window.location.origin}${window.location.pathname}#${encoded}`
-      navigator.clipboard.writeText(url)
-      toast.success("Share link copied!")
+      navigator.clipboard.writeText(url).then(
+        () => toast.success("Share link copied!"),
+        () => toast.error("Failed to copy share link")
+      )
     } catch {
       toast.error("Failed to generate share link")
     }
@@ -283,11 +297,23 @@ export default function AsciiGenerator() {
       const hash = window.location.hash.slice(1)
       if (hash) {
         const data = JSON.parse(decodeURIComponent(atob(hash)))
-        if (data.text) setText(data.text)
-        if (data.settings)
-          setSettings((prev) => ({ ...prev, ...data.settings }))
+        // Syncing from the URL (external system) on mount is the intended use
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        if (typeof data.text === "string") setText(data.text)
+        if (data.settings && typeof data.settings === "object") {
+          // Shared links are untrusted: keep only known keys of the right type
+          const safe = Object.fromEntries(
+            Object.entries(data.settings).filter(
+              ([k, v]) =>
+                k in DEFAULT_SETTINGS &&
+                typeof v === typeof DEFAULT_SETTINGS[k as keyof GeneratorSettings]
+            )
+          )
+          setSettings((prev) => ({ ...prev, ...safe }))
+        }
         window.location.hash = ""
-        toast.success("Loaded from shared link!")
+        // Defer: this effect runs before the <Toaster> sibling subscribes
+        setTimeout(() => toast.success("Loaded from shared link!"))
       }
     } catch {
       // ignore
@@ -412,9 +438,9 @@ export default function AsciiGenerator() {
         <TabsContent value="customize" className="flex-1 overflow-hidden">
           <ScrollArea className="h-full">
             <div className="p-3">
-              <Accordion multiple defaultValue={[0, 1]}>
+              <Accordion multiple defaultValue={["font", "colors"]}>
                 {/* Font Settings */}
-                <AccordionItem>
+                <AccordionItem value="font">
                   <AccordionTrigger className="py-2 text-[11px]">
                     <span className="flex items-center gap-2">
                       <TextTIcon className="size-3.5 text-muted-foreground" />
@@ -480,7 +506,7 @@ export default function AsciiGenerator() {
                 </AccordionItem>
 
                 {/* Colors */}
-                <AccordionItem>
+                <AccordionItem value="colors">
                   <AccordionTrigger className="py-2 text-[11px]">
                     <span className="flex items-center gap-2">
                       <PaletteIcon className="size-3.5 text-muted-foreground" />
@@ -592,7 +618,7 @@ export default function AsciiGenerator() {
                 </AccordionItem>
 
                 {/* Canvas */}
-                <AccordionItem>
+                <AccordionItem value="canvas">
                   <AccordionTrigger className="py-2 text-[11px]">
                     <span className="flex items-center gap-2">
                       <SlidersHorizontalIcon className="size-3.5 text-muted-foreground" />
@@ -635,7 +661,7 @@ export default function AsciiGenerator() {
                 </AccordionItem>
 
                 {/* Effects */}
-                <AccordionItem>
+                <AccordionItem value="effects">
                   <AccordionTrigger className="py-2 text-[11px]">
                     <span className="flex items-center gap-2">
                       <SparkleIcon className="size-3.5 text-muted-foreground" />
@@ -748,7 +774,7 @@ export default function AsciiGenerator() {
                 </AccordionItem>
 
                 {/* Border & Frame */}
-                <AccordionItem>
+                <AccordionItem value="frame">
                   <AccordionTrigger className="py-2 text-[11px]">
                     <span className="flex items-center gap-2">
                       <FrameCornersIcon className="size-3.5 text-muted-foreground" />
@@ -945,12 +971,12 @@ export default function AsciiGenerator() {
               <CommandIcon className="size-3.5" />
             </TooltipButton>
             <TooltipButton
-              label={theme === "dark" ? "Light mode" : "Dark mode"}
+              label={resolvedTheme === "dark" ? "Light mode" : "Dark mode"}
               onClick={() =>
-                setTheme(theme === "dark" ? "light" : "dark")
+                setTheme(resolvedTheme === "dark" ? "light" : "dark")
               }
             >
-              {theme === "dark" ? (
+              {resolvedTheme === "dark" ? (
                 <SunIcon className="size-3.5" />
               ) : (
                 <MoonIcon className="size-3.5" />
@@ -983,9 +1009,16 @@ export default function AsciiGenerator() {
         <main className="flex-1 overflow-hidden">
           {isMobile ? (
             <div className="h-full">
-              {mobileView === "editor" && editorPanel}
-              {mobileView === "preview" && previewPanel}
-              {mobileView === "settings" && customizerPanel}
+              {/* Keep all panels mounted so the canvas exists for export */}
+              <div className={cn("h-full", mobileView !== "editor" && "hidden")}>
+                {editorPanel}
+              </div>
+              <div className={cn("h-full", mobileView !== "preview" && "hidden")}>
+                {previewPanel}
+              </div>
+              <div className={cn("h-full", mobileView !== "settings" && "hidden")}>
+                {customizerPanel}
+              </div>
             </div>
           ) : (
             <ResizablePanelGroup orientation="horizontal" className="h-full">
@@ -1027,99 +1060,101 @@ export default function AsciiGenerator() {
 
         {/* ── Command Palette ── */}
         <CommandDialog open={commandOpen} onOpenChange={setCommandOpen}>
-          <CommandInput placeholder="Search commands..." />
-          <CommandList>
-            <CommandEmpty>No results found.</CommandEmpty>
-            <CommandGroup heading="Templates">
-              {ASCII_TEMPLATES.map((t) => (
+          <Command>
+            <CommandInput placeholder="Search commands..." />
+            <CommandList>
+              <CommandEmpty>No results found.</CommandEmpty>
+              <CommandGroup heading="Templates">
+                {ASCII_TEMPLATES.map((t) => (
+                  <CommandItem
+                    key={t.name}
+                    onSelect={() => {
+                      handleTextChange(t.art)
+                      setCommandOpen(false)
+                    }}
+                  >
+                    <ImageIcon className="size-4" />
+                    Insert {t.name}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+              <CommandSeparator />
+              <CommandGroup heading="Themes">
+                {COLOR_THEMES.map((t) => (
+                  <CommandItem
+                    key={t.name}
+                    onSelect={() => {
+                      applyTheme(t)
+                      setCommandOpen(false)
+                    }}
+                  >
+                    <PaletteIcon className="size-4" />
+                    {t.name} theme
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+              <CommandSeparator />
+              <CommandGroup heading="Actions">
                 <CommandItem
-                  key={t.name}
                   onSelect={() => {
-                    handleTextChange(t.art)
+                    handleExport()
                     setCommandOpen(false)
                   }}
                 >
-                  <ImageIcon className="size-4" />
-                  Insert {t.name}
+                  <DownloadSimpleIcon className="size-4" />
+                  Export Image
+                  <CommandShortcut>Ctrl+S</CommandShortcut>
                 </CommandItem>
-              ))}
-            </CommandGroup>
-            <CommandSeparator />
-            <CommandGroup heading="Themes">
-              {COLOR_THEMES.map((t) => (
                 <CommandItem
-                  key={t.name}
                   onSelect={() => {
-                    applyTheme(t)
+                    copyImage()
                     setCommandOpen(false)
                   }}
                 >
-                  <PaletteIcon className="size-4" />
-                  {t.name} theme
+                  <ClipboardIcon className="size-4" />
+                  Copy Image to Clipboard
                 </CommandItem>
-              ))}
-            </CommandGroup>
-            <CommandSeparator />
-            <CommandGroup heading="Actions">
-              <CommandItem
-                onSelect={() => {
-                  handleExport()
-                  setCommandOpen(false)
-                }}
-              >
-                <DownloadSimpleIcon className="size-4" />
-                Export Image
-                <CommandShortcut>Ctrl+S</CommandShortcut>
-              </CommandItem>
-              <CommandItem
-                onSelect={() => {
-                  copyImage()
-                  setCommandOpen(false)
-                }}
-              >
-                <ClipboardIcon className="size-4" />
-                Copy Image to Clipboard
-              </CommandItem>
-              <CommandItem
-                onSelect={() => {
-                  copyText()
-                  setCommandOpen(false)
-                }}
-              >
-                <CopyIcon className="size-4" />
-                Copy ASCII Text
-              </CommandItem>
-              <CommandItem
-                onSelect={() => {
-                  shareSettings()
-                  setCommandOpen(false)
-                }}
-              >
-                <ShareNetworkIcon className="size-4" />
-                Copy Share Link
-              </CommandItem>
-              <CommandItem
-                onSelect={() => {
-                  undo()
-                  setCommandOpen(false)
-                }}
-              >
-                <ArrowCounterClockwiseIcon className="size-4" />
-                Undo
-                <CommandShortcut>Ctrl+Z</CommandShortcut>
-              </CommandItem>
-              <CommandItem
-                onSelect={() => {
-                  redo()
-                  setCommandOpen(false)
-                }}
-              >
-                <ArrowClockwiseIcon className="size-4" />
-                Redo
-                <CommandShortcut>Ctrl+Shift+Z</CommandShortcut>
-              </CommandItem>
-            </CommandGroup>
-          </CommandList>
+                <CommandItem
+                  onSelect={() => {
+                    copyText()
+                    setCommandOpen(false)
+                  }}
+                >
+                  <CopyIcon className="size-4" />
+                  Copy ASCII Text
+                </CommandItem>
+                <CommandItem
+                  onSelect={() => {
+                    shareSettings()
+                    setCommandOpen(false)
+                  }}
+                >
+                  <ShareNetworkIcon className="size-4" />
+                  Copy Share Link
+                </CommandItem>
+                <CommandItem
+                  onSelect={() => {
+                    undo()
+                    setCommandOpen(false)
+                  }}
+                >
+                  <ArrowCounterClockwiseIcon className="size-4" />
+                  Undo
+                  <CommandShortcut>Ctrl+Z</CommandShortcut>
+                </CommandItem>
+                <CommandItem
+                  onSelect={() => {
+                    redo()
+                    setCommandOpen(false)
+                  }}
+                >
+                  <ArrowClockwiseIcon className="size-4" />
+                  Redo
+                  <CommandShortcut>Ctrl+Shift+Z</CommandShortcut>
+                </CommandItem>
+              </CommandGroup>
+            </CommandList>
+          </Command>
         </CommandDialog>
 
         {/* Hidden file input */}
@@ -1215,10 +1250,12 @@ function ColorInput({
       </div>
       <input
         type="text"
-        value={value}
+        // Uncontrolled + keyed so partial hex while typing never reaches the canvas
+        key={value}
+        defaultValue={value}
         onChange={(e) => {
           const v = e.target.value
-          if (/^#[0-9a-fA-F]{0,6}$/.test(v)) onChange(v)
+          if (/^#[0-9a-fA-F]{6}$/.test(v)) onChange(v)
         }}
         className="h-7 w-full rounded-md border border-border/50 bg-transparent px-2 font-mono text-[11px] outline-none focus:border-ring"
         maxLength={7}

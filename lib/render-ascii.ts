@@ -139,25 +139,25 @@ export function renderAsciiToCanvas(
   }
 
   // Draw each line
-  lines.forEach((line, i) => {
-    const y = textY + i * lineHeightPx
-    if (settings.letterSpacing !== 0) {
-      let x = textX
-      for (const char of line) {
-        if (char !== " ") ctx.fillText(char, x, y)
-        x += ctx.measureText(char).width + settings.letterSpacing
+  const drawLines = () =>
+    lines.forEach((line, i) => {
+      const y = textY + i * lineHeightPx
+      if (settings.letterSpacing !== 0) {
+        let x = textX
+        for (const char of line) {
+          if (char !== " ") ctx.fillText(char, x, y)
+          x += ctx.measureText(char).width + settings.letterSpacing
+        }
+      } else {
+        ctx.fillText(line, textX, y)
       }
-    } else {
-      ctx.fillText(line, textX, y)
-    }
-  })
+    })
+  drawLines()
 
   // Extra glow pass
   if (settings.glowEnabled) {
     ctx.globalAlpha = 0.35
-    lines.forEach((line, i) => {
-      ctx.fillText(line, textX, textY + i * lineHeightPx)
-    })
+    drawLines()
     ctx.globalAlpha = 1
   }
 
@@ -366,6 +366,15 @@ function adjustBrightness(hex: string, amount: number): string {
   return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`
 }
 
+function escapeXml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;")
+}
+
 export function generateSVG(text: string, settings: GeneratorSettings): string {
   const lines = text.split("\n")
   const lineHeightPx = settings.fontSize * settings.lineHeight
@@ -377,18 +386,13 @@ export function generateSVG(text: string, settings: GeneratorSettings): string {
   const textEls = lines
     .map((line, i) => {
       const y = settings.padding + (i + 1) * lineHeightPx
-      const escaped = line
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-      return `  <text x="${settings.padding}" y="${y}" fill="${settings.foregroundColor}" font-family="'${settings.fontFamily}', monospace" font-size="${settings.fontSize}" xml:space="preserve">${escaped}</text>`
+      return `  <text x="${settings.padding}" y="${y}" fill="${escapeXml(settings.foregroundColor)}" font-family="${escapeXml(`'${settings.fontFamily}', monospace`)}" font-size="${settings.fontSize}" xml:space="preserve">${escapeXml(line)}</text>`
     })
     .join("\n")
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
-  ${!settings.backgroundTransparent ? `<rect width="100%" height="100%" fill="${settings.backgroundColor}"/>` : ""}
+  ${!settings.backgroundTransparent ? `<rect width="100%" height="100%" fill="${escapeXml(settings.backgroundColor)}"/>` : ""}
 ${textEls}
 </svg>`
 }
