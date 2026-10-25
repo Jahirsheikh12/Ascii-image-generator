@@ -1,0 +1,582 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-25T21:17:38.263642+00:00",
+  "title": "Design System: Fanfold",
+  "extensions": {
+    "colorMeta": {
+      "paper": {
+        "role": "neutral",
+        "displayName": "Cool Paper",
+        "canonical": "oklch(0.985 0.006 145)",
+        "tonalRamp": [
+          "oklch(0.15 0.006 145)",
+          "oklch(0.27 0.006 145)",
+          "oklch(0.39 0.006 145)",
+          "oklch(0.51 0.006 145)",
+          "oklch(0.63 0.006 145)",
+          "oklch(0.75 0.006 145)",
+          "oklch(0.86 0.006 145)",
+          "oklch(0.95 0.006 145)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ribbon Ink",
+        "canonical": "oklch(0.24 0.014 150)",
+        "tonalRamp": [
+          "oklch(0.15 0.014 150)",
+          "oklch(0.27 0.014 150)",
+          "oklch(0.39 0.014 150)",
+          "oklch(0.51 0.014 150)",
+          "oklch(0.63 0.014 150)",
+          "oklch(0.75 0.014 150)",
+          "oklch(0.86 0.014 150)",
+          "oklch(0.95 0.014 150)"
+        ]
+      },
+      "card-paper": {
+        "role": "neutral",
+        "displayName": "Card Stock",
+        "canonical": "oklch(0.99 0.004 145)",
+        "tonalRamp": [
+          "oklch(0.15 0.004 145)",
+          "oklch(0.27 0.004 145)",
+          "oklch(0.39 0.004 145)",
+          "oklch(0.51 0.004 145)",
+          "oklch(0.63 0.004 145)",
+          "oklch(0.75 0.004 145)",
+          "oklch(0.86 0.004 145)",
+          "oklch(0.95 0.004 145)"
+        ]
+      },
+      "form-green": {
+        "role": "primary",
+        "displayName": "Form Ink",
+        "canonical": "oklch(0.48 0.09 152)",
+        "tonalRamp": [
+          "oklch(0.15 0.09 152)",
+          "oklch(0.27 0.09 152)",
+          "oklch(0.39 0.09 152)",
+          "oklch(0.51 0.09 152)",
+          "oklch(0.63 0.09 152)",
+          "oklch(0.75 0.09 152)",
+          "oklch(0.86 0.09 152)",
+          "oklch(0.95 0.09 152)"
+        ]
+      },
+      "primary": {
+        "role": "primary",
+        "displayName": "Form Press Green",
+        "canonical": "oklch(0.45 0.09 152)",
+        "tonalRamp": [
+          "oklch(0.15 0.09 152)",
+          "oklch(0.27 0.09 152)",
+          "oklch(0.39 0.09 152)",
+          "oklch(0.51 0.09 152)",
+          "oklch(0.63 0.09 152)",
+          "oklch(0.75 0.09 152)",
+          "oklch(0.86 0.09 152)",
+          "oklch(0.95 0.09 152)"
+        ]
+      },
+      "primary-foreground": {
+        "role": "neutral",
+        "displayName": "Paper on Press",
+        "canonical": "oklch(0.985 0.006 145)",
+        "tonalRamp": [
+          "oklch(0.15 0.006 145)",
+          "oklch(0.27 0.006 145)",
+          "oklch(0.39 0.006 145)",
+          "oklch(0.51 0.006 145)",
+          "oklch(0.63 0.006 145)",
+          "oklch(0.75 0.006 145)",
+          "oklch(0.86 0.006 145)",
+          "oklch(0.95 0.006 145)"
+        ]
+      },
+      "ring": {
+        "role": "primary",
+        "displayName": "Focus Green",
+        "canonical": "oklch(0.55 0.11 152)",
+        "tonalRamp": [
+          "oklch(0.15 0.11 152)",
+          "oklch(0.27 0.11 152)",
+          "oklch(0.39 0.11 152)",
+          "oklch(0.51 0.11 152)",
+          "oklch(0.63 0.11 152)",
+          "oklch(0.75 0.11 152)",
+          "oklch(0.86 0.11 152)",
+          "oklch(0.95 0.11 152)"
+        ]
+      },
+      "mint-bar": {
+        "role": "secondary",
+        "displayName": "Mint Bar",
+        "canonical": "oklch(0.94 0.04 150)",
+        "tonalRamp": [
+          "oklch(0.15 0.04 150)",
+          "oklch(0.27 0.04 150)",
+          "oklch(0.39 0.04 150)",
+          "oklch(0.51 0.04 150)",
+          "oklch(0.63 0.04 150)",
+          "oklch(0.75 0.04 150)",
+          "oklch(0.86 0.04 150)",
+          "oklch(0.95 0.04 150)"
+        ]
+      },
+      "secondary": {
+        "role": "secondary",
+        "displayName": "Pale Mint Wash",
+        "canonical": "oklch(0.935 0.035 150)",
+        "tonalRamp": [
+          "oklch(0.15 0.035 150)",
+          "oklch(0.27 0.035 150)",
+          "oklch(0.39 0.035 150)",
+          "oklch(0.51 0.035 150)",
+          "oklch(0.63 0.035 150)",
+          "oklch(0.75 0.035 150)",
+          "oklch(0.86 0.035 150)",
+          "oklch(0.95 0.035 150)"
+        ]
+      },
+      "secondary-foreground": {
+        "role": "secondary",
+        "displayName": "Deep Form Green",
+        "canonical": "oklch(0.3 0.06 152)",
+        "tonalRamp": [
+          "oklch(0.15 0.06 152)",
+          "oklch(0.27 0.06 152)",
+          "oklch(0.39 0.06 152)",
+          "oklch(0.51 0.06 152)",
+          "oklch(0.63 0.06 152)",
+          "oklch(0.75 0.06 152)",
+          "oklch(0.86 0.06 152)",
+          "oklch(0.95 0.06 152)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted Paper",
+        "canonical": "oklch(0.955 0.014 148)",
+        "tonalRamp": [
+          "oklch(0.15 0.014 148)",
+          "oklch(0.27 0.014 148)",
+          "oklch(0.39 0.014 148)",
+          "oklch(0.51 0.014 148)",
+          "oklch(0.63 0.014 148)",
+          "oklch(0.75 0.014 148)",
+          "oklch(0.86 0.014 148)",
+          "oklch(0.95 0.014 148)"
+        ]
+      },
+      "muted-foreground": {
+        "role": "neutral",
+        "displayName": "Muted Ink",
+        "canonical": "oklch(0.46 0.03 152)",
+        "tonalRamp": [
+          "oklch(0.15 0.03 152)",
+          "oklch(0.27 0.03 152)",
+          "oklch(0.39 0.03 152)",
+          "oklch(0.51 0.03 152)",
+          "oklch(0.63 0.03 152)",
+          "oklch(0.75 0.03 152)",
+          "oklch(0.86 0.03 152)",
+          "oklch(0.95 0.03 152)"
+        ]
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Ruling",
+        "canonical": "oklch(0.86 0.03 150)",
+        "tonalRamp": [
+          "oklch(0.15 0.03 150)",
+          "oklch(0.27 0.03 150)",
+          "oklch(0.39 0.03 150)",
+          "oklch(0.51 0.03 150)",
+          "oklch(0.63 0.03 150)",
+          "oklch(0.75 0.03 150)",
+          "oklch(0.86 0.03 150)",
+          "oklch(0.95 0.03 150)"
+        ]
+      },
+      "input": {
+        "role": "neutral",
+        "displayName": "Field Edge",
+        "canonical": "oklch(0.82 0.035 150)",
+        "tonalRamp": [
+          "oklch(0.15 0.035 150)",
+          "oklch(0.27 0.035 150)",
+          "oklch(0.39 0.035 150)",
+          "oklch(0.51 0.035 150)",
+          "oklch(0.63 0.035 150)",
+          "oklch(0.75 0.035 150)",
+          "oklch(0.86 0.035 150)",
+          "oklch(0.95 0.035 150)"
+        ]
+      },
+      "housing": {
+        "role": "neutral",
+        "displayName": "Printer Housing",
+        "canonical": "oklch(0.925 0.01 150)",
+        "tonalRamp": [
+          "oklch(0.15 0.01 150)",
+          "oklch(0.27 0.01 150)",
+          "oklch(0.39 0.01 150)",
+          "oklch(0.51 0.01 150)",
+          "oklch(0.63 0.01 150)",
+          "oklch(0.75 0.01 150)",
+          "oklch(0.86 0.01 150)",
+          "oklch(0.95 0.01 150)"
+        ]
+      },
+      "desk": {
+        "role": "neutral",
+        "displayName": "Desk",
+        "canonical": "oklch(0.875 0.012 150)",
+        "tonalRamp": [
+          "oklch(0.15 0.012 150)",
+          "oklch(0.27 0.012 150)",
+          "oklch(0.39 0.012 150)",
+          "oklch(0.51 0.012 150)",
+          "oklch(0.63 0.012 150)",
+          "oklch(0.75 0.012 150)",
+          "oklch(0.86 0.012 150)",
+          "oklch(0.95 0.012 150)"
+        ]
+      },
+      "destructive": {
+        "role": "error",
+        "displayName": "Fault Red",
+        "canonical": "oklch(0.53 0.19 27)",
+        "tonalRamp": [
+          "oklch(0.15 0.19 27)",
+          "oklch(0.27 0.19 27)",
+          "oklch(0.39 0.19 27)",
+          "oklch(0.51 0.19 27)",
+          "oklch(0.63 0.19 27)",
+          "oklch(0.75 0.19 27)",
+          "oklch(0.86 0.19 27)",
+          "oklch(0.95 0.19 27)"
+        ]
+      },
+      "dark-paper": {
+        "role": "neutral",
+        "displayName": "Carbon Paper",
+        "canonical": "oklch(0.19 0.012 155)",
+        "tonalRamp": [
+          "oklch(0.15 0.012 155)",
+          "oklch(0.27 0.012 155)",
+          "oklch(0.39 0.012 155)",
+          "oklch(0.51 0.012 155)",
+          "oklch(0.63 0.012 155)",
+          "oklch(0.75 0.012 155)",
+          "oklch(0.86 0.012 155)",
+          "oklch(0.95 0.012 155)"
+        ]
+      },
+      "dark-ink": {
+        "role": "neutral",
+        "displayName": "Machine-Room Ink",
+        "canonical": "oklch(0.93 0.012 140)",
+        "tonalRamp": [
+          "oklch(0.15 0.012 140)",
+          "oklch(0.27 0.012 140)",
+          "oklch(0.39 0.012 140)",
+          "oklch(0.51 0.012 140)",
+          "oklch(0.63 0.012 140)",
+          "oklch(0.75 0.012 140)",
+          "oklch(0.86 0.012 140)",
+          "oklch(0.95 0.012 140)"
+        ]
+      },
+      "dark-primary": {
+        "role": "primary",
+        "displayName": "Sage Press",
+        "canonical": "oklch(0.8 0.1 152)",
+        "tonalRamp": [
+          "oklch(0.15 0.1 152)",
+          "oklch(0.27 0.1 152)",
+          "oklch(0.39 0.1 152)",
+          "oklch(0.51 0.1 152)",
+          "oklch(0.63 0.1 152)",
+          "oklch(0.75 0.1 152)",
+          "oklch(0.86 0.1 152)",
+          "oklch(0.95 0.1 152)"
+        ]
+      },
+      "dark-form-green": {
+        "role": "primary",
+        "displayName": "Sage Form Ink",
+        "canonical": "oklch(0.74 0.08 152)",
+        "tonalRamp": [
+          "oklch(0.15 0.08 152)",
+          "oklch(0.27 0.08 152)",
+          "oklch(0.39 0.08 152)",
+          "oklch(0.51 0.08 152)",
+          "oklch(0.63 0.08 152)",
+          "oklch(0.75 0.08 152)",
+          "oklch(0.86 0.08 152)",
+          "oklch(0.95 0.08 152)"
+        ]
+      },
+      "dark-bar": {
+        "role": "secondary",
+        "displayName": "Carbon Bar",
+        "canonical": "oklch(0.235 0.026 152)",
+        "tonalRamp": [
+          "oklch(0.15 0.026 152)",
+          "oklch(0.27 0.026 152)",
+          "oklch(0.39 0.026 152)",
+          "oklch(0.51 0.026 152)",
+          "oklch(0.63 0.026 152)",
+          "oklch(0.75 0.026 152)",
+          "oklch(0.86 0.026 152)",
+          "oklch(0.95 0.026 152)"
+        ]
+      },
+      "dark-housing": {
+        "role": "neutral",
+        "displayName": "Dark Housing",
+        "canonical": "oklch(0.16 0.01 155)",
+        "tonalRamp": [
+          "oklch(0.15 0.01 155)",
+          "oklch(0.27 0.01 155)",
+          "oklch(0.39 0.01 155)",
+          "oklch(0.51 0.01 155)",
+          "oklch(0.63 0.01 155)",
+          "oklch(0.75 0.01 155)",
+          "oklch(0.86 0.01 155)",
+          "oklch(0.95 0.01 155)"
+        ]
+      },
+      "dark-desk": {
+        "role": "neutral",
+        "displayName": "Machine-Room Floor",
+        "canonical": "oklch(0.135 0.008 155)",
+        "tonalRamp": [
+          "oklch(0.15 0.008 155)",
+          "oklch(0.27 0.008 155)",
+          "oklch(0.39 0.008 155)",
+          "oklch(0.51 0.008 155)",
+          "oklch(0.63 0.008 155)",
+          "oklch(0.75 0.008 155)",
+          "oklch(0.86 0.008 155)",
+          "oklch(0.95 0.008 155)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The single landing h1; closing CTA steps to clamp(2.2rem,5vw,4.5rem)."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Landing section headings, short declaratives."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Report row titles, panel headings, drop overlay."
+      },
+      "body": {
+        "displayName": "Lead Body",
+        "purpose": "Lead paragraphs in muted ink."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Nav links, legends, list terms."
+      },
+      "ui": {
+        "displayName": "Studio UI",
+        "purpose": "Studio controls, buttons, field labels."
+      },
+      "printout": {
+        "displayName": "Printout",
+        "purpose": "All ASCII output and the editor; size computed from columns."
+      },
+      "readout": {
+        "displayName": "Readout",
+        "purpose": "Form-green values, counts, page labels."
+      }
+    },
+    "shadows": [
+      {
+        "name": "sheet-lift",
+        "value": "0 1px 0 var(--border), 0 24px 48px -28px var(--shadow)",
+        "purpose": "Landing hero printout sheet lifting off the page."
+      },
+      {
+        "name": "drop-sheet",
+        "value": "0 24px 60px -30px var(--shadow)",
+        "purpose": "Studio drag-and-drop sheet."
+      },
+      {
+        "name": "print-on-stage",
+        "value": "drop-shadow(0 18px 28px var(--shadow))",
+        "purpose": "Rendered canvas resting in the preview housing (filter)."
+      },
+      {
+        "name": "paper-edge",
+        "value": "0 0 0 1px var(--border)",
+        "purpose": "Landing sheet outline against the desk."
+      }
+    ],
+    "motion": [
+      {
+        "name": "print-feed",
+        "value": "clip-path inset(0 0 100% 0) to inset(0); steps(var(--print-rows), end); min(1.8s, rows * 0.045s)",
+        "purpose": "Signature row-by-row print reveal; disabled under reduced motion."
+      },
+      {
+        "name": "state-transition",
+        "value": "150ms",
+        "purpose": "Colour, ring and border changes on controls and resize handles."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "sheet-max",
+        "value": "1360px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary-lg",
+      "description": "Main action: Open studio, Open in studio, Download.",
+      "html": "<button class=\"ds-btn-primary\">Open in studio <svg width=\"16\" height=\"16\" viewBox=\"0 0 256 256\" fill=\"currentColor\"><path d=\"M221.66 133.66l-72 72a8 8 0 0 1-11.32-11.32L196.69 136H40a8 8 0 0 1 0-16h156.69l-58.35-58.34a8 8 0 0 1 11.32-11.32l72 72a8 8 0 0 1 0 11.32Z\"/></svg></button>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;background:var(--primary);color:var(--primary-foreground);border:1px solid transparent;border-radius:0;font-family:var(--font-archivo),sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:background-color .15s}.ds-btn-primary:hover{background:color-mix(in oklch,var(--primary) 88%,transparent)}.ds-btn-primary:active{background:color-mix(in oklch,var(--primary) 80%,transparent)}.ds-btn-primary:focus-visible{outline:2px solid var(--ring);outline-offset:2px}"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary action beside a primary; studio export actions.",
+      "html": "<button class=\"ds-btn-outline\">Choose a photo</button>",
+      "css": ".ds-btn-outline{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;background:var(--background);color:var(--foreground);border:1px solid var(--border);border-radius:0;font-family:var(--font-archivo),sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:background-color .15s}.ds-btn-outline:hover{background:var(--muted)}.ds-btn-outline:focus-visible{outline:2px solid var(--ring);outline-offset:2px}"
+    },
+    {
+      "name": "Ghost Icon Button",
+      "kind": "button",
+      "refersTo": "button-ghost-hover",
+      "description": "Toolbar actions and theme toggle.",
+      "html": "<button class=\"ds-btn-ghost\" aria-label=\"Switch to dark mode\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 256 256\" fill=\"currentColor\"><path d=\"M233.54 142.23a8 8 0 0 0-8-2 88.08 88.08 0 0 1-109.8-109.8 8 8 0 0 0-10-10 104.84 104.84 0 0 0-52.91 37A104 104 0 0 0 136 224a103.09 103.09 0 0 0 62.52-20.88 104.84 104.84 0 0 0 37-52.91 8 8 0 0 0-1.98-7.98Z\"/></svg></button>",
+      "css": ".ds-btn-ghost{display:inline-grid;place-items:center;width:28px;height:28px;background:transparent;color:var(--foreground);border:1px solid transparent;border-radius:0;cursor:pointer}.ds-btn-ghost:hover{background:var(--muted)}.ds-btn-ghost:focus-visible{outline:2px solid var(--ring);outline-offset:2px}"
+    },
+    {
+      "name": "Choice Chips",
+      "kind": "chip",
+      "refersTo": "choice-chip",
+      "description": "One-of choices such as charset and export format.",
+      "html": "<div class=\"ds-chips\"><button class=\"ds-chip\" aria-pressed=\"true\">Standard</button><button class=\"ds-chip\" aria-pressed=\"false\">Blocks</button><button class=\"ds-chip\" aria-pressed=\"false\">Dots</button></div>",
+      "css": ".ds-chips{display:flex;gap:6px}.ds-chip{height:32px;padding:0 12px;border:1px solid var(--input);border-radius:1.8px;background:var(--background);color:var(--muted-foreground);font-family:var(--font-archivo),sans-serif;font-size:14px;cursor:pointer;transition:border-color .15s,color .15s}.ds-chip:hover{border-color:var(--primary);color:var(--foreground)}.ds-chip[aria-pressed=true]{background:var(--primary);border-color:var(--primary);color:var(--primary-foreground)}.ds-chip:focus-visible{outline:2px solid var(--ring);outline-offset:2px}"
+    },
+    {
+      "name": "Hex Input",
+      "kind": "input",
+      "refersTo": "text-input",
+      "description": "Mono text field for colour values and short entries.",
+      "html": "<input class=\"ds-input\" value=\"#1F2620\" aria-label=\"Ink colour\">",
+      "css": ".ds-input{height:32px;width:88px;padding:0 8px;border:1px solid var(--input);border-radius:1.8px;background:var(--background);color:var(--foreground);font-family:var(--font-mono),monospace;font-size:12px;text-transform:uppercase;outline:none}.ds-input:focus-visible{border-color:var(--ring)}"
+    },
+    {
+      "name": "Slider Row",
+      "kind": "input",
+      "description": "Label, form-green readout, square track and thumb.",
+      "html": "<div class=\"ds-slider\"><div class=\"ds-slider-head\"><span>Columns</span><output>76</output></div><div class=\"ds-track\"><div class=\"ds-range\"></div><div class=\"ds-thumb\" tabindex=\"0\"></div></div></div>",
+      "css": ".ds-slider{width:240px;font-family:var(--font-archivo),sans-serif}.ds-slider-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;font-size:14px;font-weight:500;color:var(--foreground)}.ds-slider-head output{font-family:var(--font-mono),monospace;color:var(--form);font-variant-numeric:tabular-nums}.ds-track{position:relative;height:4px;background:var(--muted)}.ds-range{position:absolute;inset:0 60% 0 0;background:var(--primary)}.ds-thumb{position:absolute;left:40%;top:50%;width:14px;height:14px;transform:translate(-50%,-50%);border:2px solid var(--primary);border-radius:2px;background:var(--background);box-sizing:border-box}.ds-thumb:hover,.ds-thumb:focus-visible{box-shadow:0 0 0 1px color-mix(in oklch,var(--ring) 50%,transparent);outline:none}"
+    },
+    {
+      "name": "Landing Header",
+      "kind": "nav",
+      "description": "Wordmark, text links, theme toggle, primary action over a tear line.",
+      "html": "<header class=\"ds-nav\"><span class=\"ds-mark\">Fanfold</span><nav><a href=\"#\">How it works</a><a href=\"#\">Effects</a><a href=\"#\">Export</a><button class=\"ds-nav-cta\">Open studio</button></nav></header>",
+      "css": ".ds-nav{display:flex;align-items:center;justify-content:space-between;height:64px;padding:0 32px;background:var(--background);border-bottom:1px dashed color-mix(in oklch,var(--form) 55%,transparent);font-family:var(--font-archivo),sans-serif}.ds-mark{font-stretch:125%;font-weight:800;font-size:15px;letter-spacing:-0.02em;color:var(--foreground)}.ds-nav nav{display:flex;align-items:center;gap:8px}.ds-nav a{padding:4px 8px;border-radius:1.8px;font-size:14px;color:var(--muted-foreground);text-decoration:none}.ds-nav a:hover{color:var(--foreground)}.ds-nav a:focus-visible{outline:2px solid var(--ring);outline-offset:2px}.ds-nav-cta{height:32px;padding:0 10px;margin-left:4px;background:var(--primary);color:var(--primary-foreground);border:0;border-radius:0;font-size:14px;font-weight:500;cursor:pointer}.ds-nav-cta:hover{background:color-mix(in oklch,var(--primary) 88%,transparent)}"
+    },
+    {
+      "name": "Greenbar Sheet",
+      "kind": "custom",
+      "description": "Signature printout: tractor margins, green-bar paper, form-green line gutter, mono output, stepped print reveal.",
+      "html": "<figure class=\"ds-sheet-wrap\"><figcaption class=\"ds-cap\"><span>planet.png (sample)</span><span>76 × 5 · Standard</span></figcaption><div class=\"ds-sheet\"><div class=\"ds-tractor ds-l\"></div><div class=\"ds-paper\"><pre class=\"ds-nums\">1\n2\n3\n4\n5</pre><pre class=\"ds-out\">      .:-=+*#%@@%#*+=-:.\n   .-+#@@@@@@@@@@@@@@#+-.\n  :*@@@@@@@@@@@@@@@@@@@@*:\n   .-+#@@@@@@@@@@@@@@#+-.\n      .:-=+*#%@@%#*+=-:.</pre></div><div class=\"ds-tractor ds-r\"></div></div></figure>",
+      "css": ".ds-sheet-wrap{margin:0;width:420px}.ds-cap{display:flex;justify-content:space-between;margin-bottom:10px;font-family:var(--font-mono),monospace;font-size:12px;color:var(--form);font-variant-numeric:tabular-nums}.ds-sheet{display:grid;grid-template-columns:28px 1fr 28px;background:var(--background);box-shadow:0 0 0 1px var(--border),0 1px 0 var(--border),0 24px 48px -28px var(--shadow);cursor:pointer}.ds-sheet:hover{box-shadow:0 0 0 2px var(--primary),0 24px 48px -28px var(--shadow)}.ds-tractor{background-image:radial-gradient(circle at 50% 50%,var(--desk) 0 4.5px,color-mix(in oklch,var(--desk) 60%,var(--border)) 4.5px 5.5px,transparent 6px);background-size:100% 24px;background-repeat:repeat-y}.ds-l{border-right:1px dashed var(--input)}.ds-r{border-left:1px dashed var(--input)}.ds-paper{--line:1.2em;display:flex;padding:2.4em 1.2em;font-family:var(--font-mono),monospace;font-size:12px;line-height:1.2;background-image:repeating-linear-gradient(to bottom,var(--bar) 0 calc(var(--line)*3),transparent calc(var(--line)*3) calc(var(--line)*6));background-size:100% calc(var(--line)*6);background-origin:content-box;animation:ds-feed .5s steps(5,end) both}.ds-nums{margin:0 .6em 0 0;width:2.4em;text-align:right;color:color-mix(in oklch,var(--form) 75%,transparent);font-variant-numeric:tabular-nums}.ds-out{margin:0;color:var(--foreground)}@keyframes ds-feed{from{clip-path:inset(0 0 100% 0)}to{clip-path:inset(0)}}@media (prefers-reduced-motion:reduce){.ds-paper{animation:none}}"
+    },
+    {
+      "name": "Tear Line",
+      "kind": "custom",
+      "description": "Perforated section divider with a page counter.",
+      "html": "<div class=\"ds-tear\"><span>PAGE 0001</span></div>",
+      "css": ".ds-tear{position:relative;width:480px;height:1px;background-image:repeating-linear-gradient(to right,color-mix(in oklch,var(--form) 55%,transparent) 0 6px,transparent 6px 10px)}.ds-tear span{position:absolute;right:32px;top:50%;transform:translateY(-50%);padding:0 8px;background:var(--background);font-family:var(--font-mono),monospace;font-size:10px;color:var(--form);font-variant-numeric:tabular-nums}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Continuous Printout",
+    "overview": "Fanfold renders every surface as a sheet of line-printer output on green-bar fanfold paper. The page itself is the paper: a cool white strip with mint bands every three printed lines, sprocket-hole tractor margins down both edges, and perforated tear lines between sections that carry a page counter. The page sits on a darker desk tone, so the paper reads as an object you could tear off. Ink is near-black with a green cast. Form furniture (line numbers, readouts, captions, page counters) is printed in form green, the colour the paper mill printed on before the job ran.\n\nDensity follows the source: wide-set headings like the pre-printed form header, then mono output set on a strict line grid. The studio is the same paper inside an operator console. The text editor is green-bar paper with a line-number gutter, the preview sits in the printer housing, and settings are printed on plain card stock. Dark mode is the machine room after hours: sage form ink on carbon paper, darker housing, the same bars at low contrast.\n\nThe world rejects the neon terminal (green-on-black glow, glowing edges) and the generic SaaS page (purple gradients, glass cards, a centred hero over three feature boxes). Depth comes from paper on desk, never from light effects.",
+    "keyCharacteristics": [
+      "Green-bar paper as the base surface: three-line mint bands keyed to a `--line` unit.",
+      "Tractor-feed sprocket margins and perforated tear lines carry the structure.",
+      "Form green for every machine-printed annotation: line numbers, counters, readouts.",
+      "Wide (125% width) heavy Archivo for headings; JetBrains Mono for anything printed.",
+      "Square corners on buttons and sheets; near-square hairline corners on small controls.",
+      "Motion is a stepped carriage advance: output appears row by row, never fades in."
+    ],
+    "rules": [
+      {
+        "name": "The Form Ink Rule",
+        "body": "Anything a machine would print onto the form (line numbers, counts, dimensions, page labels, captions) is form green in mono with tabular figures. Content the user made is ribbon ink. Never swap them.",
+        "section": "colors"
+      },
+      {
+        "name": "The Bars Are Paper Rule",
+        "body": "Mint appears only as green-bar banding inside the pattern, keyed to the text's own line height. A mint block used as a card background breaks the paper.",
+        "section": "colors"
+      },
+      {
+        "name": "The Wide Header Rule",
+        "body": "Only headings use the 125% width display cut. Body, labels and controls stay at normal width.",
+        "section": "typography"
+      },
+      {
+        "name": "The Line Grid Rule",
+        "body": "Mono output always sits at 1.2 line height, and any green-bar behind it sets `--line` to that same line height (1.2em, 20px in the editor, 24px on the landing page). Bars and text must stay in phase.",
+        "section": "typography"
+      },
+      {
+        "name": "The Paper Lift Rule",
+        "body": "A shadow means paper resting above the housing or desk. It is soft, it falls downward, and it uses a negative spread. Buttons, chips, panels and controls never cast one.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do set every printed surface on green-bar paper with `--line` equal to the text's line height, so a band always spans three printed lines.",
+      "Do print machine annotations (line numbers, counts, sizes, page labels) in form-green JetBrains Mono with tabular figures.",
+      "Do separate major sections with a perforated tear line, numbered PAGE 000N where it ends a page.",
+      "Do keep buttons and sheets square (0px), and keep small controls at 3px or less.",
+      "Do show real rendered output from the engine on every surface. Never show a picture of ASCII.",
+      "Do reveal new output with the stepped, row-by-row print reveal, and drop it under reduced motion.",
+      "Do keep both modes: paper on desk in light, sage form ink on carbon in dark."
+    ],
+    "donts": [
+      "Don't add glow, neon green-on-black, or glowing edges to the interface. The neon terminal is a rejected look.",
+      "Don't use purple gradients, glass cards, or a centred hero above three feature boxes.",
+      "Don't use gradients as decoration. Gradients are allowed only where they are the paper's own mechanism: the green-bar bands, sprocket holes, perforation and transparency checkerboard.",
+      "Don't give buttons, chips or panels a shadow. Shadows belong to paper lifting off the desk.",
+      "Don't fill a card or panel with mint-bar colour. Mint exists only as banding.",
+      "Don't use the wide display cut for body text, labels or controls.",
+      "Don't fade or slide output in. The printer advances in steps."
+    ]
+  }
+}

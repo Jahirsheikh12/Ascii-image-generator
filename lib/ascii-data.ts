@@ -53,6 +53,7 @@ export const FONT_OPTIONS = [
 ] as const
 
 export const COLOR_THEMES: ColorTheme[] = [
+  { name: "Fanfold", foreground: "#1f2620", background: "#f6f9f4" },
   { name: "Classic", foreground: "#e2e8f0", background: "#0f172a" },
   {
     name: "Matrix",
@@ -142,8 +143,8 @@ export const ASCII_TEMPLATES: AsciiTemplate[] = [
     art: `     /\\
     /  \\
    /    \\
-  | ASCI |
-  | CRAFT|
+  | FAN  |
+  | FOLD |
   |      |
   /|    |\\
  /_|____|_\\
