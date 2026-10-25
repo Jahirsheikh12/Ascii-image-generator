@@ -5,6 +5,7 @@ import React, {
   useRef,
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useSyncExternalStore,
 } from "react"
@@ -30,24 +31,23 @@ import {
   ImageSquareIcon,
   ArrowsOutSimpleIcon,
   ArrowsInSimpleIcon,
-  CaretDownIcon,
-  SquaresFourIcon,
 } from "@phosphor-icons/react"
 
 import { cn } from "@/lib/utils"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { Wordmark } from "@/components/wordmark"
 import { ThemeToggle } from "@/components/theme-toggle"
-import {
-  ColorRow,
-  PresetSwatches,
-  Segmented,
-  SelectRow,
-  SliderRow,
-  SwitchRow,
-} from "@/components/controls"
 
 import { Button } from "@/components/ui/button"
+import { Slider } from "@/components/ui/slider"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
@@ -106,6 +106,10 @@ import {
 
 // ─── Helpers ───
 
+function sliderVal(v: number | readonly number[]): number {
+  return typeof v === "number" ? v : v[0]
+}
+
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement("a")
@@ -121,13 +125,6 @@ function downloadBlob(blob: Blob, filename: string) {
 // Editor line metrics: bars span three lines, like the paper
 const EDITOR_LINE = 20
 
-// New sessions start on Fanfold paper; shared links still merge over DEFAULT_SETTINGS keys
-const freshSettings = (): GeneratorSettings => ({
-  ...DEFAULT_SETTINGS,
-  foregroundColor: COLOR_THEMES[0].foreground,
-  backgroundColor: COLOR_THEMES[0].background,
-})
-
 // ─── Main Component ───
 
 export default function AsciiGenerator() {
@@ -135,7 +132,12 @@ export default function AsciiGenerator() {
   const [text, setText] = useState(ASCII_TEMPLATES[0].art)
   const [undoStack, setUndoStack] = useState<string[]>([])
   const [redoStack, setRedoStack] = useState<string[]>([])
-  const [settings, setSettings] = useState<GeneratorSettings>(freshSettings)
+  // New sessions start on Fanfold paper; shared links still merge over DEFAULT_SETTINGS keys
+  const [settings, setSettings] = useState<GeneratorSettings>(() => ({
+    ...DEFAULT_SETTINGS,
+    foregroundColor: COLOR_THEMES[0].foreground,
+    backgroundColor: COLOR_THEMES[0].background,
+  }))
   const [commandOpen, setCommandOpen] = useState(false)
   const [previewDims, setPreviewDims] = useState({
     width: 0,
@@ -157,8 +159,6 @@ export default function AsciiGenerator() {
 
   // --- Refs ---
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const templatesRef = useRef<HTMLDetailsElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const renderTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -385,19 +385,6 @@ export default function AsciiGenerator() {
     toast.success(`${t.name} theme applied`)
   }, [])
 
-  // --- Reset style (keeps export choices; undo restores the previous look) ---
-  const resetStyle = useCallback(() => {
-    const before = settings
-    setSettings((prev) => ({
-      ...freshSettings(),
-      exportFormat: prev.exportFormat,
-      jpegQuality: prev.jpegQuality,
-    }))
-    toast("Style reset", {
-      action: { label: "Undo", onClick: () => setSettings(before) },
-    })
-  }, [settings])
-
   // --- Share ---
   const shareSettings = useCallback(() => {
     try {
@@ -596,19 +583,14 @@ export default function AsciiGenerator() {
     <div className="flex h-full flex-col bg-card">
       {imagePanel}
 
-      {/* Templates, foldable to give the editor its height back */}
-      <details
-        ref={templatesRef}
-        open
-        className="group/tpl shrink-0 border-b border-border"
-      >
-        <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-xs font-medium text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
+      {/* Templates */}
+      <div className="shrink-0 border-b border-border py-3.5">
+        <p className="mb-2.5 px-4 text-xs font-medium text-muted-foreground">
           Templates
-          <CaretDownIcon className="size-4 transition-transform group-open/tpl:rotate-180" />
-        </summary>
+        </p>
         <div
           className={cn(
-            "px-4 pb-3.5",
+            "px-4",
             isMobile
               ? "flex gap-2 overflow-x-auto pb-1 no-scrollbar [mask-image:linear-gradient(to_right,black_82%,transparent)]"
               : "grid grid-cols-4 gap-2"
@@ -635,7 +617,7 @@ export default function AsciiGenerator() {
             </button>
           ))}
         </div>
-      </details>
+      </div>
 
       {/* Text, on green-bar paper with a line-number gutter */}
       <div className="relative flex min-h-0 flex-1 bg-background">
@@ -652,7 +634,6 @@ export default function AsciiGenerator() {
           </pre>
         </div>
         <textarea
-          ref={textareaRef}
           aria-label="ASCII text"
           value={asciiText}
           onChange={(e) => handleTextChange(e.target.value)}
@@ -727,9 +708,6 @@ export default function AsciiGenerator() {
       <div className="flex h-11 shrink-0 items-center justify-between gap-2 border-b border-border px-3">
         <h2 className="text-xs font-medium text-muted-foreground">Preview</h2>
         <div className="flex items-center gap-0.5">
-          <span className="mr-1.5 font-mono text-[11px] text-form tabular">
-            {fit ? `Fit · ${Math.round(zoom * 100)}%` : "100%"}
-          </span>
           <TooltipButton
             label={fit ? "Show at actual size" : "Fit to window"}
             onClick={() => setFit((f) => !f)}
@@ -767,49 +745,6 @@ export default function AsciiGenerator() {
             style={{ zoom }}
           />
         </div>
-        {!asciiText.trim() && (
-          <div className="pointer-events-none absolute inset-0 grid place-items-center p-6">
-            <div className="pointer-events-auto max-w-xs bg-background px-6 py-6 text-center shadow-[0_18px_28px_var(--shadow)] ring-1 ring-border">
-              <h3 className="font-display text-lg">Nothing to print yet</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Type something, start from a template or convert a photo.
-              </p>
-              <div className="mt-4 flex flex-wrap justify-center gap-1.5">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setMobileView("editor")
-                    // After the mobile panel switch makes the editor visible
-                    setTimeout(() => textareaRef.current?.focus())
-                  }}
-                >
-                  <PencilSimpleIcon className="size-3.5" />
-                  Type
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setMobileView("editor")
-                    if (templatesRef.current) templatesRef.current.open = true
-                  }}
-                >
-                  <SquaresFourIcon className="size-3.5" />
-                  Templates
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <ImageIcon className="size-3.5" />
-                  Photo
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
       <div className="pointer-events-none absolute right-3 bottom-3 bg-background/90 px-2 py-1 font-mono text-[11px] text-form tabular ring-1 ring-border">
         {actualW} × {actualH} px
@@ -885,7 +820,38 @@ export default function AsciiGenerator() {
                   <div className="space-y-4 pb-3">
                     <div>
                       <p className="mb-2 text-xs text-muted-foreground">Presets</p>
-                      <PresetSwatches isActive={isActiveTheme} onPick={applyTheme} />
+                      <div className="grid grid-cols-5 gap-1.5">
+                        {COLOR_THEMES.map((t) => (
+                          <button
+                            key={t.name}
+                            type="button"
+                            title={t.name}
+                            aria-label={`${t.name} preset`}
+                            aria-pressed={isActiveTheme(t)}
+                            onClick={() => applyTheme(t)}
+                            className="group text-left"
+                          >
+                            <span
+                              className={cn(
+                                "grid h-9 place-items-center font-mono text-xs font-bold ring-1 ring-border transition-shadow group-hover:ring-2 group-hover:ring-ring",
+                                isActiveTheme(t) && "ring-2 ring-primary"
+                              )}
+                              style={{
+                                backgroundColor: t.background,
+                                color: t.foreground,
+                                backgroundImage: t.gradient
+                                  ? `linear-gradient(90deg, transparent 70%, ${t.gradient[1]} 70%)`
+                                  : undefined,
+                              }}
+                            >
+                              #@
+                            </span>
+                            <span className="mt-1 block truncate text-[10px] text-muted-foreground group-hover:text-foreground">
+                              {t.name}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
 
                     <ColorRow
@@ -1063,17 +1029,6 @@ export default function AsciiGenerator() {
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
-            <div className="px-4 pt-2 pb-5">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full text-muted-foreground"
-                onClick={resetStyle}
-              >
-                <ArrowCounterClockwiseIcon className="size-4" />
-                Reset style
-              </Button>
-            </div>
           </ScrollArea>
         </TabsContent>
 
@@ -1188,7 +1143,7 @@ export default function AsciiGenerator() {
             >
               <CommandIcon className="size-4" />
               Commands
-              <kbd className="rounded-sm border border-input px-1 font-mono text-[11px]">
+              <kbd className="rounded-sm border border-input px-1 font-mono text-[10px]">
                 {mod} K
               </kbd>
             </Button>
@@ -1196,7 +1151,7 @@ export default function AsciiGenerator() {
             <Button size="sm" className="ml-1 gap-1.5 px-3" onClick={handleExport}>
               <DownloadSimpleIcon className="size-4" />
               Export
-              <span className="hidden font-mono text-[11px] opacity-75 sm:inline">
+              <span className="hidden font-mono text-[10px] opacity-75 sm:inline">
                 {settings.exportFormat.toUpperCase()}
               </span>
             </Button>
@@ -1488,5 +1443,188 @@ function SectionTrigger({
         {children}
       </span>
     </AccordionTrigger>
+  )
+}
+
+function SliderRow({
+  label,
+  display,
+  value,
+  onChange,
+  min,
+  max,
+  step = 1,
+}: {
+  label: string
+  display: React.ReactNode
+  value: number
+  onChange: (v: number) => void
+  min: number
+  max: number
+  step?: number
+}) {
+  const id = useId()
+  return (
+    <div className="space-y-2.5">
+      <div className="flex items-baseline justify-between gap-2">
+        <span id={id} className="text-xs text-muted-foreground">
+          {label}
+        </span>
+        <output className="font-mono text-[11px] text-form tabular">{display}</output>
+      </div>
+      <Slider
+        aria-labelledby={id}
+        value={[value]}
+        onValueChange={(v) => onChange(sliderVal(v))}
+        min={min}
+        max={max}
+        step={step}
+      />
+    </div>
+  )
+}
+
+function SwitchRow({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string
+  checked: boolean
+  onChange: (v: boolean) => void
+}) {
+  const id = useId()
+  return (
+    <div className="flex min-h-6 items-center justify-between gap-3">
+      <Label htmlFor={id} className="text-xs font-normal text-muted-foreground">
+        {label}
+      </Label>
+      <Switch id={id} checked={checked} onCheckedChange={onChange} size="sm" />
+    </div>
+  )
+}
+
+function SelectRow({
+  label,
+  value,
+  options,
+  onChange,
+  previewFont,
+}: {
+  label: string
+  value: string
+  options: readonly { value: string; label: string }[]
+  onChange: (v: string) => void
+  previewFont?: boolean
+}) {
+  const id = useId()
+  return (
+    <div className="space-y-2">
+      <span id={id} className="block text-xs text-muted-foreground">
+        {label}
+      </span>
+      <Select
+        value={value}
+        items={options}
+        onValueChange={(v) => v && onChange(v)}
+      >
+        <SelectTrigger aria-labelledby={id} className="h-8 w-full bg-background text-xs">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((o) => (
+            <SelectItem key={o.value} value={o.value}>
+              <span style={previewFont ? { fontFamily: o.value } : undefined}>
+                {o.label}
+              </span>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+}
+
+function Segmented<T extends string | number>({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string
+  value: T
+  options: readonly { value: T; label: string }[]
+  onChange: (v: T) => void
+}) {
+  return (
+    <fieldset>
+      <legend className="mb-2 text-xs text-muted-foreground">{label}</legend>
+      <div
+        className="grid gap-1"
+        style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
+      >
+        {options.map((o) => (
+          <button
+            key={o.value}
+            type="button"
+            aria-pressed={value === o.value}
+            onClick={() => onChange(o.value)}
+            className={cn(
+              "h-8 rounded-sm border text-xs font-medium transition-colors",
+              value === o.value
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-input bg-background text-muted-foreground hover:border-primary hover:text-foreground"
+            )}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
+    </fieldset>
+  )
+}
+
+function ColorRow({
+  label,
+  value,
+  onChange,
+}: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+}) {
+  const id = useId()
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <Label htmlFor={id} className="text-xs font-normal text-muted-foreground">
+        {label}
+      </Label>
+      <div className="flex items-center gap-1.5">
+        <label className="relative size-8 shrink-0 cursor-pointer ring-1 ring-border focus-within:ring-2 focus-within:ring-ring">
+          <span className="sr-only">Pick {label.toLowerCase()}</span>
+          <input
+            type="color"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="absolute inset-0 size-full cursor-pointer opacity-0"
+          />
+          <span className="block size-full" style={{ backgroundColor: value }} />
+        </label>
+        <input
+          id={id}
+          type="text"
+          // Uncontrolled + keyed so partial hex while typing never reaches the canvas
+          key={value}
+          defaultValue={value}
+          onChange={(e) => {
+            const v = e.target.value
+            if (/^#[0-9a-fA-F]{6}$/.test(v)) onChange(v)
+          }}
+          className="h-8 w-[5.5rem] rounded-sm border border-input bg-background px-2 font-mono text-xs uppercase outline-none focus-visible:border-ring"
+          maxLength={7}
+          spellCheck={false}
+        />
+      </div>
+    </div>
   )
 }

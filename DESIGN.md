@@ -87,8 +87,8 @@ spacing:
   gutter-sm: "20px"
   gutter-md: "32px"
   gutter-lg: "48px"
-  section: "64px"
-  section-lg: "96px"
+  section: "80px"
+  section-lg: "112px"
 components:
   button-primary:
     backgroundColor: "{colors.primary}"
@@ -148,7 +148,7 @@ components:
 
 **Creative North Star: "The Continuous Printout"**
 
-Fanfold renders every surface as a sheet of line-printer output on green-bar fanfold paper. The page itself is the paper: a cool white strip with mint bands every three printed lines, sprocket-hole tractor margins down both edges, and perforated tear lines between sections that carry a page counter. The page sits on a darker desk tone, so the paper reads as an object you could tear off. Ink is a near-black foreground with a green cast. Form furniture (line numbers, readouts, captions, page counters) is printed in form green, the colour the paper mill printed on before the job ran.
+Fanfold renders every surface as a sheet of line-printer output on green-bar fanfold paper. The page itself is the paper: a cool white strip with mint bands every three printed lines, sprocket-hole tractor margins down both edges, and perforated tear lines between sections that carry a page counter. The page sits on a darker desk tone, so the paper reads as an object you could tear off. Ink is near-black with a green cast. Form furniture (line numbers, readouts, captions, page counters) is printed in form green, the colour the paper mill printed on before the job ran.
 
 Density follows the source: wide-set headings like the pre-printed form header, then mono output set on a strict line grid. The studio is the same paper inside an operator console. The text editor is green-bar paper with a line-number gutter, the preview sits in the printer housing, and settings are printed on plain card stock. Dark mode is the machine room after hours: sage form ink on carbon paper, darker housing, the same bars at low contrast.
 
@@ -176,7 +176,7 @@ One green family: hue 145 to 155 runs through paper, ink, bars, form and accent,
 
 ### Neutral
 - **Cool Paper** (paper): the base page and sheet surface; the backing behind labels on tear lines.
-- **Foreground Ink** (ink): all body text, printed ASCII output and banner lettering, plus the 2px top rule on the job-report list.
+- **Ribbon Ink** (ink): all body text and printed ASCII output, plus the 2px top rule on the job-report list.
 - **Card Stock** (card-paper): the studio header and settings panel.
 - **Muted Ink** (muted-foreground): supporting copy, nav links, field labels.
 - **Ruling** (border) and **Field Edge** (input): hairline dividers and ring outlines (border); control strokes, the dashed tractor edge and the scrollbar thumb (input).
@@ -185,7 +185,7 @@ One green family: hue 145 to 155 runs through paper, ink, bars, form and accent,
 - **Fault Red** (destructive): destructive actions and invalid states only.
 
 ### Named Rules
-**The Form Ink Rule.** Anything a machine would print onto the form (line numbers, counts, dimensions, page labels, captions) is form green in mono with tabular figures. Content the user made is foreground ink. Never swap them.
+**The Form Ink Rule.** Anything a machine would print onto the form (line numbers, counts, dimensions, page labels, captions) is form green in mono with tabular figures. Content the user made is ribbon ink. Never swap them.
 
 **The Bars Are Paper Rule.** Mint appears only as green-bar banding inside the pattern, keyed to the text's own line height. A mint block used as a card background breaks the paper.
 
@@ -213,9 +213,7 @@ One green family: hue 145 to 155 runs through paper, ink, bars, form and accent,
 
 ## Layout
 
-The landing page is one sheet: a centred column at most 1360px wide, flanked by tractor margins (14px on mobile, 32px from sm), set on the desk tone with a 1px ruling outline. Inside it, content keeps a horizontal gutter of 20, 32 or 48px (base, sm, lg) and vertical section padding of 64px, rising to 96px at lg (the closing section uses 80px, rising to 96px). Sections are separated by full-width perforated tear lines, numbered PAGE 0001 onward at the right. Composition is a 12-column grid at lg with asymmetric spans (5/7 in the hero, 8/4 in the finish picker, 4/7 and 7/4 elsewhere). The banner page (FANFOLD set in its own letters, in foreground ink) spans the full width above the hero grid from sm up. Below sm it is hidden, and the header wordmark carries the name. Banner lettering comes from one shared glyph set (FANFOLD, and 404 on the not-found page), five rows tall, each letter printed in itself.
-
-The 404 page is the same sheet at full viewport height: a header with the wordmark and theme toggle, a "404" banner, a headline-size h1, a lead paragraph, a primary and outline action pair, and an "End of job." footer in form-green mono.
+The landing page is one sheet: a centred column at most 1360px wide, flanked by tractor margins (14px on mobile, 32px from sm), set on the desk tone with a 1px ruling outline. Inside it, content keeps a horizontal gutter of 20, 32 or 48px (base, sm, lg) and section padding of 80px, rising to 112px at lg. Sections are separated by full-width perforated tear lines, numbered PAGE 0001 onward at the right. Composition is a 12-column grid at lg with asymmetric spans (5/7 in the hero, 4/7 and 7/4 elsewhere). The banner page (FANFOLD set in its own letters, in ribbon ink) spans the full width above the hero grid.
 
 The landing page lays repeating content out as a job report: full-width rows split 4/8, divided by rulings under a 2px ink top rule. Specs are leader lists, a term column 11rem wide beside its description. Neither uses cards.
 
@@ -228,10 +226,8 @@ Depth is physical: paper on a desk. The system is flat and tonal (paper, card, h
 ### Shadow Vocabulary
 - **Sheet lift** (`box-shadow: 0 1px 0 var(--border), 0 24px 48px -28px var(--shadow)`): the live printout sheet on the landing hero.
 - **Drop sheet** (`box-shadow: 0 24px 60px -30px var(--shadow)`): the studio drag-and-drop sheet.
-- **Print on stage** (`filter: drop-shadow(0 18px 28px var(--shadow))`): a rendered canvas in a housing (studio preview, landing finish picker).
-- **Paper edge** (`box-shadow: 0 0 0 1px var(--border)`): the outline of the landing and 404 sheets against the desk.
-- **Empty sheet** (`box-shadow: 0 18px 28px var(--shadow)`): the blank "Nothing to print yet" sheet resting on the studio stage.
-- **Header rule** (`box-shadow: 0 1px 0 var(--border)`): a 1px rule under the sticky landing header and the 404 header, not depth.
+- **Print on stage** (`filter: drop-shadow(0 18px 28px var(--shadow))`): the rendered canvas in the preview housing.
+- **Paper edge** (`box-shadow: 0 0 0 1px var(--border)`): the outline of the landing page sheet against the desk.
 
 ### Named Rules
 **The Paper Lift Rule.** A shadow means paper resting above the housing or desk. It is soft, it falls downward, and it uses a negative spread. Buttons, chips, panels and controls never cast one.
@@ -245,7 +241,6 @@ Corners are square. Buttons, sheets, tabs, slider tracks, panels and the privacy
 ### Buttons
 Blunt, form-press buttons: flat fills, square corners, no lift.
 - **Shape:** square (0px).
-- **Pairing:** where two actions sit together, the primary is paired with an outline secondary (hero, 404).
 - **Primary:** form-press green fill with paper text, 32px tall with 10px padding at 0.75rem medium. The large size is 40px tall with 16px padding at 0.875rem. A trailing arrow icon marks forward navigation.
 - **Hover / Focus:** the fill drops to 88% (80% when pressed). Focus shows a 2px ring-colour outline with a 2px offset.
 - **Outline:** paper fill with a ruling stroke, filling muted on hover. Used for the secondary action beside a primary.
@@ -268,35 +263,14 @@ Blunt, form-press buttons: flat fills, square corners, no lift.
 - **Sliders:** a 4px square track in muted with a primary range, and a 14px square thumb (2px corner) with a primary border on paper. The value prints above the right end as a form-green readout.
 - **Switch:** 32 by 18px, 3px corner, field-edge track that turns primary when on.
 
-### Wordmark
-A folded fanfold glyph: three panels with mint-bar fills, form-green strokes and foreground-ink print lines, set beside "Fanfold" in the display cut at 15px. The favicon is the same glyph on a paper tile.
-
-### Labelled Setting Controls
-The studio and the landing finish picker use the same set of labelled rows, so a control looks identical in both places. Each one has a 0.75rem muted-ink label.
-- **Slider row:** the label on the left and a form-green mono readout on the right, above a slider. The slider is named through aria-labelledby.
-- **Switch row:** the label on the left and a small switch (24 by 14px) on the right. The visible switch is named through aria-labelledby.
-- **Select row:** the label above a 32px trigger on paper.
-- **Segmented:** a one-of grid of 32px choice chips, laid out as equal columns.
-- **Color row:** a 32px square swatch with a 1px ruling ring (2px ring colour on focus) next to an uppercase mono hex field.
-- **Preset swatches:** a five-column grid. Each tile is 36px tall, shows "#@" in the preset's own ink on its own paper, and has a stripe when the preset uses gradient ink. The tile has a 1px ruling ring, 2px ring colour on hover and 2px primary when active, with an 11px name below.
-
 ### Navigation
-The landing header is sticky, 64px tall on paper, with a 1px ruling under it (`box-shadow: 0 1px 0 var(--border)`): the wordmark on the left, then muted 0.875rem text links that turn ink on hover (hidden below md), the theme toggle, and a primary "Open studio" button. A tear line follows it in the page flow. The studio header is 48px on card stock with a ruling underneath: wordmark, a 1px divider, the current file name in muted ink, then ghost actions including a Commands button with a kbd hint. On mobile, the studio uses bottom tabs. Tabs elsewhere use a square muted track, and the line variant has a 2px primary underline.
+The landing header is 64px tall on paper: the wordmark on the left, then muted 0.875rem text links that turn ink on hover (hidden below md), the theme toggle, and a primary "Open studio" button. A tear line sits under it. The studio header is 48px on card stock with a ruling underneath: wordmark, a 1px divider, the current file name in muted ink, then ghost actions including a Commands button with a kbd hint. On mobile, the studio uses bottom tabs. Tabs elsewhere use a square muted track, and the line variant has a 2px primary underline.
 
 ### Greenbar Sheet (signature)
-A printout surface: tractor strip, then green-bar paper, then tractor strip. A form-green line-number gutter runs down the left of the paper, and a mono caption above the sheet gives the file name and `columns × rows · charset`. The hero sample prints at 48 columns on phones and 76 on desktop until the visitor moves the slider. On the landing page the whole sheet is the drop target: dragging a file adds a 2px primary ring and a "Release to print" overlay in title type. The studio editor reuses it as a textarea with a scroll-synced line gutter divided off by a dashed edge.
-
-### Finish Picker
-The landing "Try a finish" section runs the real export engine on one live canvas. The canvas sits in the printer housing, with a 1px ruling ring and the print-on-stage shadow. Beside it are the shared controls: preset swatches, effect switch rows and a frame select. Under it, a form-green mono readout lists the active finish, separated by " · ", and announces changes politely. It opens on the Fanfold preset with scan lines on.
-
-### Studio Stage
-- **Zoom:** in fit mode the preview scales to fit the stage, up to 2×. A form-green mono readout in the toolbar shows "Fit · N%" or "100%".
-- **Empty state:** with no text, the stage shows a blank paper sheet: "Nothing to print yet" in title type, a muted line, and three small outline actions (Type, Templates, Photo).
-- **Templates:** a native disclosure with a muted 0.75rem summary and a caret that rotates when it opens.
-- **Reset style:** a full-width ghost button at the foot of the settings. Its toast offers Undo.
+A printout surface: tractor strip, then green-bar paper, then tractor strip. A form-green line-number gutter runs down the left of the paper, and a mono caption above the sheet gives the file name and `columns × rows · charset`. On the landing page the whole sheet is the drop target: dragging a file adds a 2px primary ring and a "Release to print" overlay in title type. The studio editor reuses it as a textarea with a scroll-synced line gutter divided off by a dashed edge.
 
 ### Print Reveal (signature motion)
-New output is uncovered top to bottom by a clip-path wipe that advances in `steps(rows)`, one step per printed row, over about 0.045s per row and at most 1.8s. On the hero it replays whenever the source, charset, invert setting or theme changes. Other landing prints run the same reveal once, when they scroll into view (25% visible, at about 0.06s per row and at most 1.6s). Prints already on screen at load stay printed. When reduced motion is requested, the reveal is skipped entirely.
+New output is uncovered top to bottom by a clip-path wipe that advances in `steps(rows)`, one step per printed row, over about 0.045s per row and at most 1.8s. It replays whenever the source, charset, invert setting or theme changes. When reduced motion is requested, the reveal is skipped entirely.
 
 ## Do's and Don'ts
 
