@@ -5,14 +5,12 @@ import React, {
   useRef,
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useSyncExternalStore,
 } from "react"
 import { toast } from "sonner"
-import { useTheme } from "next-themes"
 import {
-  SunIcon,
-  MoonIcon,
   CopyIcon,
   TrashIcon,
   UploadSimpleIcon,
@@ -29,10 +27,16 @@ import {
   ImageIcon,
   ClipboardIcon,
   XIcon,
+  PencilSimpleIcon,
+  ImageSquareIcon,
+  ArrowsOutSimpleIcon,
+  ArrowsInSimpleIcon,
 } from "@phosphor-icons/react"
 
 import { cn } from "@/lib/utils"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { Wordmark } from "@/components/wordmark"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
@@ -53,7 +57,6 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import {
   Tooltip,
@@ -119,6 +122,9 @@ function downloadBlob(blob: Blob, filename: string) {
   setTimeout(() => URL.revokeObjectURL(url), 0)
 }
 
+// Editor line metrics: bars span three lines, like the paper
+const EDITOR_LINE = 20
+
 // ─── Main Component ───
 
 export default function AsciiGenerator() {
@@ -126,7 +132,12 @@ export default function AsciiGenerator() {
   const [text, setText] = useState(ASCII_TEMPLATES[0].art)
   const [undoStack, setUndoStack] = useState<string[]>([])
   const [redoStack, setRedoStack] = useState<string[]>([])
-  const [settings, setSettings] = useState<GeneratorSettings>(DEFAULT_SETTINGS)
+  // New sessions start on Fanfold paper; shared links still merge over DEFAULT_SETTINGS keys
+  const [settings, setSettings] = useState<GeneratorSettings>(() => ({
+    ...DEFAULT_SETTINGS,
+    foregroundColor: COLOR_THEMES[0].foreground,
+    backgroundColor: COLOR_THEMES[0].background,
+  }))
   const [commandOpen, setCommandOpen] = useState(false)
   const [previewDims, setPreviewDims] = useState({
     width: 0,
@@ -153,13 +164,18 @@ export default function AsciiGenerator() {
 
   // --- Hooks ---
   const isMobile = useIsMobile()
-  const { resolvedTheme, setTheme } = useTheme()
   // false during SSR/hydration, true on the client — avoids theme flash
   const mounted = useSyncExternalStore(
     () => () => {},
     () => true,
     () => false
   )
+  const [fit, setFit] = useState(true)
+  const stageRef = useRef<HTMLDivElement>(null)
+  const [stage, setStage] = useState({ w: 0, h: 0 })
+  const gutterRef = useRef<HTMLDivElement>(null)
+  const mod =
+    mounted && /Mac|iPhone|iPad|iPod/.test(navigator.userAgent) ? "⌘" : "Ctrl"
 
   // --- Settings updater ---
   const updateSetting = useCallback(
@@ -245,6 +261,17 @@ export default function AsciiGenerator() {
     }
     // mounted/isMobile swap the layout, which mounts a fresh canvas
   }, [asciiText, charColors, settings, mounted, isMobile])
+
+  // --- Stage size, for fitting the preview (it remounts with the layout) ---
+  useEffect(() => {
+    const el = stageRef.current
+    if (!el) return
+    const ro = new ResizeObserver(([entry]) =>
+      setStage({ w: entry.contentRect.width, h: entry.contentRect.height })
+    )
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [mounted, isMobile])
 
   // --- Export ---
   const handleExport = useCallback(() => {
@@ -433,133 +460,119 @@ export default function AsciiGenerator() {
   // ─── Render sections ───
 
   const imagePanel = imageSource ? (
-    <div className="max-h-[50%] shrink-0 overflow-y-auto border-b border-border/50 p-3">
-      <div className="mb-3 flex items-center gap-2">
+    <section
+      aria-label="Photo conversion"
+      className="max-h-[52%] shrink-0 overflow-y-auto border-b border-border p-4"
+    >
+      <div className="mb-4 flex items-center gap-3">
         <div
-          className="size-9 shrink-0 rounded-md border border-border/50 bg-contain bg-center bg-no-repeat"
+          className="size-11 shrink-0 bg-housing bg-contain bg-center bg-no-repeat ring-1 ring-border"
           style={{ backgroundImage: `url(${imageSource.thumb})` }}
         />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[11px] font-medium">{imageSource.name}</p>
-          <p className="text-[10px] text-muted-foreground">
-            {imageSource.canvas.width}x{imageSource.canvas.height}px → {cols}x
+          <p className="truncate text-sm font-medium">{imageSource.name}</p>
+          <p className="font-mono text-[11px] text-form tabular">
+            {imageSource.canvas.width} × {imageSource.canvas.height} px → {cols} ×{" "}
             {rows} chars
           </p>
         </div>
         <TooltipButton
-          label="Replace image"
+          label="Replace photo"
           onClick={() => fileInputRef.current?.click()}
         >
-          <UploadSimpleIcon className="size-3.5" />
+          <UploadSimpleIcon className="size-4" />
         </TooltipButton>
-        <TooltipButton label="Detach image (keep text)" onClick={detachImage}>
-          <XIcon className="size-3.5" />
+        <TooltipButton label="Detach photo, keep the text" onClick={detachImage}>
+          <XIcon className="size-4" />
         </TooltipButton>
       </div>
-      <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-        <SettingRow label={`Columns: ${imageOpts.columns}`}>
-          <Slider
-            value={[imageOpts.columns]}
-            onValueChange={(v) => updateImageOpt("columns", sliderVal(v))}
-            min={20}
-            max={MAX_COLUMNS}
-            step={1}
-          />
-        </SettingRow>
-        <SettingRow label="Characters">
-          <Select
-            value={imageOpts.charset}
-            items={CHARSETS}
-            onValueChange={(v) => v && updateImageOpt("charset", v)}
-          >
-            <SelectTrigger className="h-7 w-full text-[11px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {CHARSETS.map((c) => (
-                <SelectItem key={c.value} value={c.value}>
-                  {c.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </SettingRow>
+      <div className="grid grid-cols-2 gap-x-5 gap-y-4">
+        <SliderRow
+          label="Columns"
+          display={imageOpts.columns}
+          value={imageOpts.columns}
+          onChange={(v) => updateImageOpt("columns", v)}
+          min={20}
+          max={MAX_COLUMNS}
+        />
+        <SelectRow
+          label="Characters"
+          value={imageOpts.charset}
+          options={CHARSETS}
+          onChange={(v) => updateImageOpt("charset", v)}
+        />
         {imageOpts.charset === "custom" && (
-          <div className="col-span-2">
-            <SettingRow label="Custom ramp (light → dense)">
-              <input
-                type="text"
-                value={imageOpts.customChars}
-                onChange={(e) => updateImageOpt("customChars", e.target.value)}
-                spellCheck={false}
-                className="h-7 w-full rounded-md border border-border/50 bg-transparent px-2 font-mono text-[11px] outline-none focus:border-ring"
-              />
-            </SettingRow>
+          <div className="col-span-2 space-y-2">
+            <Label htmlFor="custom-ramp" className="text-xs text-muted-foreground">
+              Custom ramp, light to dense
+            </Label>
+            <input
+              id="custom-ramp"
+              type="text"
+              value={imageOpts.customChars}
+              onChange={(e) => updateImageOpt("customChars", e.target.value)}
+              spellCheck={false}
+              className="h-8 w-full rounded-sm border border-input bg-background px-2.5 font-mono text-xs outline-none focus-visible:border-ring"
+            />
           </div>
         )}
-        <SettingRow label={`Brightness: ${imageOpts.brightness}`}>
-          <Slider
-            value={[imageOpts.brightness]}
-            onValueChange={(v) => updateImageOpt("brightness", sliderVal(v))}
-            min={-100}
-            max={100}
-            step={1}
-          />
-        </SettingRow>
-        <SettingRow label={`Contrast: ${imageOpts.contrast}`}>
-          <Slider
-            value={[imageOpts.contrast]}
-            onValueChange={(v) => updateImageOpt("contrast", sliderVal(v))}
-            min={-100}
-            max={100}
-            step={1}
-          />
-        </SettingRow>
-        <SettingRow label="Color" inline>
-          <Switch
-            checked={imageOpts.color}
-            onCheckedChange={(v) => updateImageOpt("color", v)}
-            size="sm"
-          />
-        </SettingRow>
-        <SettingRow label="Dither" inline>
-          <Switch
-            checked={imageOpts.dither}
-            onCheckedChange={(v) => updateImageOpt("dither", v)}
-            size="sm"
-          />
-        </SettingRow>
-        <SettingRow label="Invert" inline>
-          <Switch
-            checked={imageOpts.invert}
-            onCheckedChange={(v) => updateImageOpt("invert", v)}
-            size="sm"
-          />
-        </SettingRow>
+        <SliderRow
+          label="Brightness"
+          display={imageOpts.brightness}
+          value={imageOpts.brightness}
+          onChange={(v) => updateImageOpt("brightness", v)}
+          min={-100}
+          max={100}
+        />
+        <SliderRow
+          label="Contrast"
+          display={imageOpts.contrast}
+          value={imageOpts.contrast}
+          onChange={(v) => updateImageOpt("contrast", v)}
+          min={-100}
+          max={100}
+        />
+        <SwitchRow
+          label="Color"
+          checked={imageOpts.color}
+          onChange={(v) => updateImageOpt("color", v)}
+        />
+        <SwitchRow
+          label="Dither"
+          checked={imageOpts.dither}
+          onChange={(v) => updateImageOpt("dither", v)}
+        />
+        <SwitchRow
+          label="Invert"
+          checked={imageOpts.invert}
+          onChange={(v) => updateImageOpt("invert", v)}
+        />
         <button
+          type="button"
           onClick={() => setImageOpts(DEFAULT_IMAGE_OPTIONS)}
-          className="justify-self-end text-[10px] text-muted-foreground hover:text-foreground"
+          className="justify-self-end rounded-sm px-1 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
         >
-          Reset
+          Reset photo settings
         </button>
       </div>
-      <p className="mt-3 text-[10px] text-muted-foreground/60">
-        Editing the text below detaches the image.
+      <p className="mt-4 text-xs text-muted-foreground">
+        Editing the text below detaches the photo.
       </p>
-    </div>
+    </section>
   ) : (
-    <div className="shrink-0 border-b border-border/50 p-3">
+    <div className="shrink-0 border-b border-border p-4">
       <button
+        type="button"
         onClick={() => fileInputRef.current?.click()}
-        className="flex w-full items-center gap-3 rounded-md border border-dashed border-border px-3 py-3 text-left transition-all hover:border-primary/50 hover:bg-primary/5"
+        className="group flex w-full items-center gap-3.5 rounded-sm border border-dashed border-input bg-background px-3.5 py-3.5 text-left transition-colors hover:border-primary hover:bg-secondary"
       >
-        <ImageIcon className="size-5 shrink-0 text-primary" />
+        <span className="grid size-10 shrink-0 place-items-center bg-secondary text-secondary-foreground transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+          <ImageIcon className="size-5" />
+        </span>
         <span>
-          <span className="block text-[11px] font-medium">
-            Convert an image to ASCII
-          </span>
-          <span className="block text-[10px] text-muted-foreground">
-            Click, drop or paste an image
+          <span className="block text-sm font-medium">Convert a photo</span>
+          <span className="block text-xs text-muted-foreground">
+            Drop, paste or choose an image
           </span>
         </span>
       </button>
@@ -567,591 +580,513 @@ export default function AsciiGenerator() {
   )
 
   const editorPanel = (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col bg-card">
       {imagePanel}
 
       {/* Templates */}
-      <div className="shrink-0 border-b border-border/50 p-3">
-        <p className="mb-2 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+      <div className="shrink-0 border-b border-border py-3.5">
+        <p className="mb-2.5 px-4 text-xs font-medium text-muted-foreground">
           Templates
         </p>
-        <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+        <div
+          className={cn(
+            "px-4",
+            isMobile
+              ? "flex gap-2 overflow-x-auto pb-1 no-scrollbar [mask-image:linear-gradient(to_right,black_82%,transparent)]"
+              : "grid grid-cols-4 gap-2"
+          )}
+        >
           {ASCII_TEMPLATES.map((t) => (
             <button
               key={t.name}
+              type="button"
               onClick={() => handleTextChange(t.art)}
-              className="shrink-0 rounded-md border border-border/50 bg-muted/30 px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground transition-all hover:border-primary/40 hover:bg-primary/5 hover:text-foreground"
+              className={cn("group text-left", isMobile && "shrink-0")}
             >
-              {t.name}
+              <span className="grid h-12 w-full min-w-16 place-items-center overflow-hidden bg-background ring-1 ring-border transition-shadow group-hover:ring-primary">
+                <pre
+                  aria-hidden="true"
+                  className="font-mono text-[4px] leading-[1.1] text-foreground"
+                >
+                  {t.art}
+                </pre>
+              </span>
+              <span className="mt-1 block text-[11px] text-muted-foreground group-hover:text-foreground">
+                {t.name}
+              </span>
             </button>
           ))}
         </div>
       </div>
 
-      {/* Textarea */}
-      <div className="relative flex-1 overflow-hidden">
+      {/* Text, on green-bar paper with a line-number gutter */}
+      <div className="relative flex min-h-0 flex-1 bg-background">
+        <div
+          ref={gutterRef}
+          aria-hidden="true"
+          className="w-11 shrink-0 overflow-hidden border-r border-dashed border-input"
+        >
+          <pre
+            className="py-[20px] pr-2.5 text-right font-mono text-[11px] text-form/80 tabular"
+            style={{ lineHeight: `${EDITOR_LINE}px` }}
+          >
+            {lines.map((_, i) => i + 1).join("\n")}
+          </pre>
+        </div>
         <textarea
+          aria-label="ASCII text"
           value={asciiText}
           onChange={(e) => handleTextChange(e.target.value)}
+          onScroll={(e) => {
+            if (gutterRef.current)
+              gutterRef.current.scrollTop = e.currentTarget.scrollTop
+          }}
           spellCheck={false}
-          className="ascii-textarea size-full resize-none border-none bg-transparent p-4 font-mono text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground/40"
-          placeholder="Type or paste ASCII art here..."
+          className="ascii-textarea greenbar size-full resize-none border-none bg-local px-4 py-[20px] font-mono text-[13px] text-foreground outline-none placeholder:text-muted-foreground [--line:20px] [background-origin:content-box]"
+          style={{ lineHeight: `${EDITOR_LINE}px` }}
+          placeholder="Type or paste ASCII art here…"
         />
       </div>
 
-      {/* Actions bar */}
-      <div className="flex shrink-0 items-center gap-1 border-t border-border/50 px-3 py-2">
-        <TooltipButton label="Undo (Ctrl+Z)" onClick={undo} disabled={undoStack.length === 0}>
-          <ArrowCounterClockwiseIcon className="size-3.5" />
-        </TooltipButton>
-        <TooltipButton label="Redo (Ctrl+Shift+Z)" onClick={redo} disabled={redoStack.length === 0}>
-          <ArrowClockwiseIcon className="size-3.5" />
-        </TooltipButton>
-        <Separator orientation="vertical" className="mx-1 h-4" />
-        <TooltipButton label="Copy text" onClick={copyText}>
-          <CopyIcon className="size-3.5" />
-        </TooltipButton>
-        <TooltipButton label="Import image or .txt file" onClick={() => fileInputRef.current?.click()}>
-          <UploadSimpleIcon className="size-3.5" />
+      {/* Actions */}
+      <div className="flex h-11 shrink-0 items-center gap-0.5 border-t border-border px-2">
+        <TooltipButton
+          label={`Undo (${mod} Z)`}
+          onClick={undo}
+          disabled={undoStack.length === 0}
+        >
+          <ArrowCounterClockwiseIcon className="size-4" />
         </TooltipButton>
         <TooltipButton
-          label="Clear"
+          label={`Redo (⇧ ${mod} Z)`}
+          onClick={redo}
+          disabled={redoStack.length === 0}
+        >
+          <ArrowClockwiseIcon className="size-4" />
+        </TooltipButton>
+        <Separator orientation="vertical" className="mx-1.5 h-4" />
+        <TooltipButton label="Copy text" onClick={copyText}>
+          <CopyIcon className="size-4" />
+        </TooltipButton>
+        <TooltipButton
+          label="Import an image or .txt file"
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <UploadSimpleIcon className="size-4" />
+        </TooltipButton>
+        <TooltipButton
+          label="Clear text"
           onClick={() => {
             handleTextChange("")
             toast.success("Cleared")
           }}
         >
-          <TrashIcon className="size-3.5" />
+          <TrashIcon className="size-4" />
         </TooltipButton>
-        <div className="ml-auto text-[10px] text-muted-foreground/60">
-          {rows}x{cols}
-        </div>
+        <span className="ml-auto pr-2 font-mono text-[11px] text-form tabular">
+          {rows} × {cols}
+        </span>
       </div>
     </div>
   )
 
+  // Fit scales up to 2× (sharp at the default density) and down as far as needed
+  const STAGE_PAD = isMobile ? 48 : 80
+  const zoom =
+    fit && stage.w > STAGE_PAD && previewDims.width > 0
+      ? Math.min(
+          2,
+          (stage.w - STAGE_PAD) / previewDims.width,
+          (stage.h - STAGE_PAD) / previewDims.height
+        )
+      : 1
+  const actualW = Math.ceil(previewDims.width * previewDims.scale)
+  const actualH = Math.ceil(previewDims.height * previewDims.scale)
+
   const previewPanel = (
-    <div className="relative flex h-full items-center justify-center overflow-auto bg-[repeating-conic-gradient(var(--color-muted)_0%_25%,transparent_0%_50%)] bg-[length:16px_16px] p-6">
-      <canvas
-        ref={canvasRef}
-        className="block max-w-full shadow-2xl transition-shadow"
-        style={{ imageRendering: "auto" }}
-      />
+    <div className="relative flex h-full flex-col bg-housing">
+      <div className="flex h-11 shrink-0 items-center justify-between gap-2 border-b border-border px-3">
+        <h2 className="text-xs font-medium text-muted-foreground">Preview</h2>
+        <div className="flex items-center gap-0.5">
+          <TooltipButton
+            label={fit ? "Show at actual size" : "Fit to window"}
+            onClick={() => setFit((f) => !f)}
+          >
+            {fit ? (
+              <ArrowsOutSimpleIcon className="size-4" />
+            ) : (
+              <ArrowsInSimpleIcon className="size-4" />
+            )}
+          </TooltipButton>
+          <TooltipButton label="Copy image" onClick={copyImage}>
+            <ClipboardIcon className="size-4" />
+          </TooltipButton>
+        </div>
+      </div>
+      <div
+        ref={stageRef}
+        className={cn(
+          "relative min-h-0 flex-1 overflow-auto",
+          settings.backgroundTransparent &&
+            "bg-[repeating-conic-gradient(var(--color-border)_0%_25%,transparent_0%_50%)] bg-[length:16px_16px]"
+        )}
+      >
+        <div
+          className={cn(
+            "flex p-6 sm:p-10",
+            fit ? "size-full items-center justify-center" : "min-h-full min-w-full w-max items-start"
+          )}
+        >
+          <canvas
+            ref={canvasRef}
+            role="img"
+            aria-label="Rendered ASCII art preview"
+            className="block shrink-0 drop-shadow-[0_18px_28px_var(--shadow)]"
+            style={{ zoom }}
+          />
+        </div>
+      </div>
+      <div className="pointer-events-none absolute right-3 bottom-3 bg-background/90 px-2 py-1 font-mono text-[11px] text-form tabular ring-1 ring-border">
+        {actualW} × {actualH} px
+      </div>
     </div>
   )
 
+  const isActiveTheme = (t: ColorTheme) =>
+    settings.foregroundColor === t.foreground &&
+    settings.backgroundColor === t.background
+
   const customizerPanel = (
-    <div className="flex h-full flex-col overflow-hidden">
-      <Tabs defaultValue="customize" className="flex h-full flex-col">
-        <div className="shrink-0 border-b border-border/50 px-3 pt-2">
-          <TabsList variant="line" className="h-7">
-            <TabsTrigger value="customize" className="text-[11px]">
-              Customize
+    <div className="flex h-full flex-col overflow-hidden bg-card">
+      <Tabs defaultValue="customize" className="flex h-full flex-col gap-0">
+        <div className="flex h-11 shrink-0 items-end border-b border-border px-3">
+          <TabsList variant="line" className="h-9">
+            <TabsTrigger value="customize" className="px-2 text-sm">
+              Style
             </TabsTrigger>
-            <TabsTrigger value="export" className="text-[11px]">
+            <TabsTrigger value="export" className="px-2 text-sm">
               Export
             </TabsTrigger>
           </TabsList>
         </div>
 
-        <TabsContent value="customize" className="flex-1 overflow-hidden">
+        <TabsContent value="customize" className="min-h-0 flex-1">
           <ScrollArea className="h-full">
-            <div className="p-3">
-              <Accordion multiple defaultValue={["font", "colors"]}>
-                {/* Font Settings */}
-                <AccordionItem value="font">
-                  <AccordionTrigger className="py-2 text-[11px]">
-                    <span className="flex items-center gap-2">
-                      <TextTIcon className="size-3.5 text-muted-foreground" />
-                      Font
-                    </span>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-3 pb-2">
-                      <SettingRow label="Family">
-                        <Select
-                          value={settings.fontFamily}
-                          onValueChange={(v) => v && updateSetting("fontFamily", v)}
-                        >
-                          <SelectTrigger className="h-7 w-full text-[11px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {FONT_OPTIONS.map((f) => (
-                              <SelectItem key={f.value} value={f.value}>
-                                <span style={{ fontFamily: f.value }}>
-                                  {f.label}
-                                </span>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </SettingRow>
-                      <SettingRow label={`Size: ${settings.fontSize}px`}>
-                        <Slider
-                          value={[settings.fontSize]}
-                          onValueChange={(v) => updateSetting("fontSize", sliderVal(v))}
-                          min={8}
-                          max={72}
-                          step={1}
-                        />
-                      </SettingRow>
-                      <SettingRow
-                        label={`Line Height: ${settings.lineHeight.toFixed(1)}`}
-                      >
-                        <Slider
-                          value={[settings.lineHeight]}
-                          onValueChange={(v) => updateSetting("lineHeight", sliderVal(v))}
-                          min={0.8}
-                          max={3}
-                          step={0.1}
-                        />
-                      </SettingRow>
-                      <SettingRow
-                        label={`Letter Spacing: ${settings.letterSpacing}px`}
-                      >
-                        <Slider
-                          value={[settings.letterSpacing]}
-                          onValueChange={(v) =>
-                            updateSetting("letterSpacing", sliderVal(v))
-                          }
-                          min={-2}
-                          max={10}
-                          step={0.5}
-                        />
-                      </SettingRow>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
+            <Accordion multiple defaultValue={["font", "colors"]} className="px-4">
+              <AccordionItem value="font">
+                <SectionTrigger icon={TextTIcon}>Font</SectionTrigger>
+                <AccordionContent>
+                  <div className="space-y-4 pb-3">
+                    <SelectRow
+                      label="Family"
+                      value={settings.fontFamily}
+                      options={FONT_OPTIONS}
+                      onChange={(v) => updateSetting("fontFamily", v)}
+                      previewFont
+                    />
+                    <SliderRow
+                      label="Size"
+                      display={`${settings.fontSize} px`}
+                      value={settings.fontSize}
+                      onChange={(v) => updateSetting("fontSize", v)}
+                      min={8}
+                      max={72}
+                    />
+                    <SliderRow
+                      label="Line height"
+                      display={settings.lineHeight.toFixed(1)}
+                      value={settings.lineHeight}
+                      onChange={(v) => updateSetting("lineHeight", v)}
+                      min={0.8}
+                      max={3}
+                      step={0.1}
+                    />
+                    <SliderRow
+                      label="Letter spacing"
+                      display={`${settings.letterSpacing} px`}
+                      value={settings.letterSpacing}
+                      onChange={(v) => updateSetting("letterSpacing", v)}
+                      min={-2}
+                      max={10}
+                      step={0.5}
+                    />
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
 
-                {/* Colors */}
-                <AccordionItem value="colors">
-                  <AccordionTrigger className="py-2 text-[11px]">
-                    <span className="flex items-center gap-2">
-                      <PaletteIcon className="size-3.5 text-muted-foreground" />
-                      Colors
-                    </span>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-3 pb-2">
-                      {/* Theme presets */}
-                      <div>
-                        <Label className="mb-1.5 text-[10px] text-muted-foreground">
-                          Presets
-                        </Label>
-                        <div className="flex flex-wrap gap-1.5">
-                          {COLOR_THEMES.map((t) => (
-                            <button
-                              key={t.name}
-                              onClick={() => applyTheme(t)}
-                              className="group relative flex h-6 items-center gap-1.5 rounded-md border border-border/50 px-2 text-[10px] transition-all hover:border-primary/40"
-                            >
-                              <span
-                                className="size-2.5 rounded-full"
-                                style={{ backgroundColor: t.foreground }}
-                              />
-                              <span
-                                className="size-2.5 rounded-full"
-                                style={{ backgroundColor: t.background }}
-                              />
-                              <span className="text-muted-foreground group-hover:text-foreground">
-                                {t.name}
-                              </span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <SettingRow label="Foreground">
-                        <ColorInput
-                          value={settings.foregroundColor}
-                          onChange={(v) =>
-                            updateSetting("foregroundColor", v)
-                          }
-                        />
-                      </SettingRow>
-                      <SettingRow label="Background">
-                        <ColorInput
-                          value={settings.backgroundColor}
-                          onChange={(v) =>
-                            updateSetting("backgroundColor", v)
-                          }
-                        />
-                      </SettingRow>
-                      <SettingRow label="Transparent BG" inline>
-                        <Switch
-                          checked={settings.backgroundTransparent}
-                          onCheckedChange={(v) =>
-                            updateSetting("backgroundTransparent", v)
-                          }
-                          size="sm"
-                        />
-                      </SettingRow>
-
-                      <Separator className="my-1" />
-
-                      <SettingRow label="Gradient text" inline>
-                        <Switch
-                          checked={settings.useGradient}
-                          onCheckedChange={(v) =>
-                            updateSetting("useGradient", v)
-                          }
-                          size="sm"
-                        />
-                      </SettingRow>
-                      {settings.useGradient && (
-                        <>
-                          <SettingRow label="Gradient Start">
-                            <ColorInput
-                              value={settings.gradientColor1}
-                              onChange={(v) =>
-                                updateSetting("gradientColor1", v)
-                              }
-                            />
-                          </SettingRow>
-                          <SettingRow label="Gradient End">
-                            <ColorInput
-                              value={settings.gradientColor2}
-                              onChange={(v) =>
-                                updateSetting("gradientColor2", v)
-                              }
-                            />
-                          </SettingRow>
-                          <SettingRow
-                            label={`Angle: ${settings.gradientAngle}deg`}
+              <AccordionItem value="colors">
+                <SectionTrigger icon={PaletteIcon}>Colors</SectionTrigger>
+                <AccordionContent>
+                  <div className="space-y-4 pb-3">
+                    <div>
+                      <p className="mb-2 text-xs text-muted-foreground">Presets</p>
+                      <div className="grid grid-cols-5 gap-1.5">
+                        {COLOR_THEMES.map((t) => (
+                          <button
+                            key={t.name}
+                            type="button"
+                            title={t.name}
+                            aria-label={`${t.name} preset`}
+                            aria-pressed={isActiveTheme(t)}
+                            onClick={() => applyTheme(t)}
+                            className="group text-left"
                           >
-                            <Slider
-                              value={[settings.gradientAngle]}
-                              onValueChange={(v) =>
-                                updateSetting("gradientAngle", sliderVal(v))
-                              }
-                              min={0}
-                              max={360}
-                              step={5}
-                            />
-                          </SettingRow>
-                        </>
-                      )}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-
-                {/* Canvas */}
-                <AccordionItem value="canvas">
-                  <AccordionTrigger className="py-2 text-[11px]">
-                    <span className="flex items-center gap-2">
-                      <SlidersHorizontalIcon className="size-3.5 text-muted-foreground" />
-                      Canvas
-                    </span>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-3 pb-2">
-                      <SettingRow label={`Padding: ${settings.padding}px`}>
-                        <Slider
-                          value={[settings.padding]}
-                          onValueChange={(v) => updateSetting("padding", sliderVal(v))}
-                          min={0}
-                          max={128}
-                          step={4}
-                        />
-                      </SettingRow>
-                      <SettingRow label="Scale">
-                        <div className="flex gap-1">
-                          {PIXEL_DENSITY_OPTIONS.map((o) => (
-                            <button
-                              key={o.value}
-                              onClick={() =>
-                                updateSetting("pixelDensity", o.value)
-                              }
+                            <span
                               className={cn(
-                                "rounded-md border px-2.5 py-1 text-[10px] font-medium transition-all",
-                                settings.pixelDensity === o.value
-                                  ? "border-primary/50 bg-primary/10 text-primary"
-                                  : "border-border/50 text-muted-foreground hover:text-foreground"
+                                "grid h-9 place-items-center font-mono text-xs font-bold ring-1 ring-border transition-shadow group-hover:ring-2 group-hover:ring-ring",
+                                isActiveTheme(t) && "ring-2 ring-primary"
                               )}
+                              style={{
+                                backgroundColor: t.background,
+                                color: t.foreground,
+                                backgroundImage: t.gradient
+                                  ? `linear-gradient(90deg, transparent 70%, ${t.gradient[1]} 70%)`
+                                  : undefined,
+                              }}
                             >
-                              {o.label}
-                            </button>
-                          ))}
-                        </div>
-                      </SettingRow>
+                              #@
+                            </span>
+                            <span className="mt-1 block truncate text-[10px] text-muted-foreground group-hover:text-foreground">
+                              {t.name}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </AccordionContent>
-                </AccordionItem>
 
-                {/* Effects */}
-                <AccordionItem value="effects">
-                  <AccordionTrigger className="py-2 text-[11px]">
-                    <span className="flex items-center gap-2">
-                      <SparkleIcon className="size-3.5 text-muted-foreground" />
-                      Effects
-                    </span>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-3 pb-2">
-                      <SettingRow label="Glow" inline>
-                        <Switch
-                          checked={settings.glowEnabled}
-                          onCheckedChange={(v) =>
-                            updateSetting("glowEnabled", v)
-                          }
-                          size="sm"
+                    <ColorRow
+                      label="Ink"
+                      value={settings.foregroundColor}
+                      onChange={(v) => updateSetting("foregroundColor", v)}
+                    />
+                    <ColorRow
+                      label="Paper"
+                      value={settings.backgroundColor}
+                      onChange={(v) => updateSetting("backgroundColor", v)}
+                    />
+                    <SwitchRow
+                      label="Transparent paper"
+                      checked={settings.backgroundTransparent}
+                      onChange={(v) => updateSetting("backgroundTransparent", v)}
+                    />
+                    <Separator />
+                    <SwitchRow
+                      label="Gradient ink"
+                      checked={settings.useGradient}
+                      onChange={(v) => updateSetting("useGradient", v)}
+                    />
+                    {settings.useGradient && (
+                      <>
+                        <ColorRow
+                          label="Gradient start"
+                          value={settings.gradientColor1}
+                          onChange={(v) => updateSetting("gradientColor1", v)}
                         />
-                      </SettingRow>
-                      <SettingRow label="Scan Lines" inline>
-                        <Switch
-                          checked={settings.scanLinesEnabled}
-                          onCheckedChange={(v) =>
-                            updateSetting("scanLinesEnabled", v)
-                          }
-                          size="sm"
+                        <ColorRow
+                          label="Gradient end"
+                          value={settings.gradientColor2}
+                          onChange={(v) => updateSetting("gradientColor2", v)}
                         />
-                      </SettingRow>
-                      <SettingRow label="CRT Effect" inline>
-                        <Switch
-                          checked={settings.crtEnabled}
-                          onCheckedChange={(v) =>
-                            updateSetting("crtEnabled", v)
-                          }
-                          size="sm"
+                        <SliderRow
+                          label="Angle"
+                          display={`${settings.gradientAngle}°`}
+                          value={settings.gradientAngle}
+                          onChange={(v) => updateSetting("gradientAngle", v)}
+                          min={0}
+                          max={360}
+                          step={5}
                         />
-                      </SettingRow>
-                      <SettingRow label="Noise" inline>
-                        <Switch
-                          checked={settings.noiseEnabled}
-                          onCheckedChange={(v) =>
-                            updateSetting("noiseEnabled", v)
-                          }
-                          size="sm"
-                        />
-                      </SettingRow>
+                      </>
+                    )}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
 
-                      <Separator className="my-1" />
+              <AccordionItem value="canvas">
+                <SectionTrigger icon={SlidersHorizontalIcon}>Canvas</SectionTrigger>
+                <AccordionContent>
+                  <div className="space-y-4 pb-3">
+                    <SliderRow
+                      label="Padding"
+                      display={`${settings.padding} px`}
+                      value={settings.padding}
+                      onChange={(v) => updateSetting("padding", v)}
+                      min={0}
+                      max={128}
+                      step={4}
+                    />
+                    <Segmented
+                      label="Pixel density"
+                      value={settings.pixelDensity}
+                      options={PIXEL_DENSITY_OPTIONS}
+                      onChange={(v) => updateSetting("pixelDensity", v)}
+                    />
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
 
-                      <SettingRow label="Text Shadow" inline>
-                        <Switch
-                          checked={settings.textShadowEnabled}
-                          onCheckedChange={(v) =>
-                            updateSetting("textShadowEnabled", v)
-                          }
-                          size="sm"
+              <AccordionItem value="effects">
+                <SectionTrigger icon={SparkleIcon}>Effects</SectionTrigger>
+                <AccordionContent>
+                  <div className="space-y-3.5 pb-3">
+                    <SwitchRow
+                      label="Glow"
+                      checked={settings.glowEnabled}
+                      onChange={(v) => updateSetting("glowEnabled", v)}
+                    />
+                    <SwitchRow
+                      label="Scan lines"
+                      checked={settings.scanLinesEnabled}
+                      onChange={(v) => updateSetting("scanLinesEnabled", v)}
+                    />
+                    <SwitchRow
+                      label="CRT curve"
+                      checked={settings.crtEnabled}
+                      onChange={(v) => updateSetting("crtEnabled", v)}
+                    />
+                    <SwitchRow
+                      label="Noise"
+                      checked={settings.noiseEnabled}
+                      onChange={(v) => updateSetting("noiseEnabled", v)}
+                    />
+                    <Separator />
+                    <SwitchRow
+                      label="Text shadow"
+                      checked={settings.textShadowEnabled}
+                      onChange={(v) => updateSetting("textShadowEnabled", v)}
+                    />
+                    {settings.textShadowEnabled && (
+                      <>
+                        <ColorRow
+                          label="Shadow color"
+                          value={settings.textShadowColor}
+                          onChange={(v) => updateSetting("textShadowColor", v)}
                         />
-                      </SettingRow>
-                      {settings.textShadowEnabled && (
-                        <>
-                          <SettingRow label="Shadow Color">
-                            <ColorInput
-                              value={settings.textShadowColor}
-                              onChange={(v) =>
-                                updateSetting("textShadowColor", v)
-                              }
-                            />
-                          </SettingRow>
-                          <SettingRow
-                            label={`Blur: ${settings.textShadowBlur}px`}
-                          >
-                            <Slider
-                              value={[settings.textShadowBlur]}
-                              onValueChange={(v) =>
-                                updateSetting("textShadowBlur", sliderVal(v))
-                              }
-                              min={0}
-                              max={20}
-                              step={1}
-                            />
-                          </SettingRow>
-                          <SettingRow
-                            label={`Offset X: ${settings.textShadowOffsetX}px`}
-                          >
-                            <Slider
-                              value={[settings.textShadowOffsetX]}
-                              onValueChange={(v) =>
-                                updateSetting("textShadowOffsetX", sliderVal(v))
-                              }
-                              min={-10}
-                              max={10}
-                              step={1}
-                            />
-                          </SettingRow>
-                          <SettingRow
-                            label={`Offset Y: ${settings.textShadowOffsetY}px`}
-                          >
-                            <Slider
-                              value={[settings.textShadowOffsetY]}
-                              onValueChange={(v) =>
-                                updateSetting("textShadowOffsetY", sliderVal(v))
-                              }
-                              min={-10}
-                              max={10}
-                              step={1}
-                            />
-                          </SettingRow>
-                        </>
-                      )}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
+                        <SliderRow
+                          label="Blur"
+                          display={`${settings.textShadowBlur} px`}
+                          value={settings.textShadowBlur}
+                          onChange={(v) => updateSetting("textShadowBlur", v)}
+                          min={0}
+                          max={20}
+                        />
+                        <SliderRow
+                          label="Offset X"
+                          display={`${settings.textShadowOffsetX} px`}
+                          value={settings.textShadowOffsetX}
+                          onChange={(v) => updateSetting("textShadowOffsetX", v)}
+                          min={-10}
+                          max={10}
+                        />
+                        <SliderRow
+                          label="Offset Y"
+                          display={`${settings.textShadowOffsetY} px`}
+                          value={settings.textShadowOffsetY}
+                          onChange={(v) => updateSetting("textShadowOffsetY", v)}
+                          min={-10}
+                          max={10}
+                        />
+                      </>
+                    )}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
 
-                {/* Border & Frame */}
-                <AccordionItem value="frame">
-                  <AccordionTrigger className="py-2 text-[11px]">
-                    <span className="flex items-center gap-2">
-                      <FrameCornersIcon className="size-3.5 text-muted-foreground" />
-                      Border & Frame
-                    </span>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-3 pb-2">
-                      <SettingRow label="Frame">
-                        <Select
-                          value={settings.frameTemplate}
-                          items={FRAME_TEMPLATES}
-                          onValueChange={(v) =>
-                            v && updateSetting("frameTemplate", v)
-                          }
-                        >
-                          <SelectTrigger className="h-7 w-full text-[11px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {FRAME_TEMPLATES.map((f) => (
-                              <SelectItem key={f.value} value={f.value}>
-                                {f.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </SettingRow>
-                      <SettingRow label="Border Style">
-                        <Select
-                          value={settings.borderStyle}
-                          items={BORDER_STYLES}
-                          onValueChange={(v) =>
-                            v && updateSetting("borderStyle", v)
-                          }
-                        >
-                          <SelectTrigger className="h-7 w-full text-[11px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {BORDER_STYLES.map((b) => (
-                              <SelectItem key={b.value} value={b.value}>
-                                {b.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </SettingRow>
-                      {settings.borderStyle !== "none" && (
-                        <>
-                          <SettingRow
-                            label={`Width: ${settings.borderWidth}px`}
-                          >
-                            <Slider
-                              value={[settings.borderWidth]}
-                              onValueChange={(v) =>
-                                updateSetting("borderWidth", sliderVal(v))
-                              }
-                              min={1}
-                              max={12}
-                              step={1}
-                            />
-                          </SettingRow>
-                          <SettingRow label="Border Color">
-                            <ColorInput
-                              value={settings.borderColor}
-                              onChange={(v) =>
-                                updateSetting("borderColor", v)
-                              }
-                            />
-                          </SettingRow>
-                        </>
-                      )}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            </div>
+              <AccordionItem value="frame">
+                <SectionTrigger icon={FrameCornersIcon}>Border & frame</SectionTrigger>
+                <AccordionContent>
+                  <div className="space-y-4 pb-3">
+                    <SelectRow
+                      label="Frame"
+                      value={settings.frameTemplate}
+                      options={FRAME_TEMPLATES}
+                      onChange={(v) => updateSetting("frameTemplate", v)}
+                    />
+                    <SelectRow
+                      label="Border"
+                      value={settings.borderStyle}
+                      options={BORDER_STYLES}
+                      onChange={(v) => updateSetting("borderStyle", v)}
+                    />
+                    {settings.borderStyle !== "none" && (
+                      <>
+                        <SliderRow
+                          label="Border width"
+                          display={`${settings.borderWidth} px`}
+                          value={settings.borderWidth}
+                          onChange={(v) => updateSetting("borderWidth", v)}
+                          min={1}
+                          max={12}
+                        />
+                        <ColorRow
+                          label="Border color"
+                          value={settings.borderColor}
+                          onChange={(v) => updateSetting("borderColor", v)}
+                        />
+                      </>
+                    )}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </ScrollArea>
         </TabsContent>
 
-        <TabsContent value="export" className="flex-1 overflow-hidden">
+        <TabsContent value="export" className="min-h-0 flex-1">
           <ScrollArea className="h-full">
-            <div className="space-y-4 p-3">
-              <div>
-                <Label className="mb-2 text-[10px] text-muted-foreground">
-                  Format
-                </Label>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {EXPORT_FORMATS.map((f) => (
-                    <button
-                      key={f.value}
-                      onClick={() => updateSetting("exportFormat", f.value)}
-                      className={cn(
-                        "rounded-md border py-2 text-[11px] font-medium transition-all",
-                        settings.exportFormat === f.value
-                          ? "border-primary/50 bg-primary/10 text-primary"
-                          : "border-border/50 text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      {f.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+            <div className="space-y-6 p-4">
+              <Segmented
+                label="Format"
+                value={settings.exportFormat}
+                options={EXPORT_FORMATS}
+                onChange={(v) => updateSetting("exportFormat", v)}
+              />
 
               {settings.exportFormat === "jpeg" && (
-                <SettingRow
-                  label={`Quality: ${settings.jpegQuality}%`}
-                >
-                  <Slider
-                    value={[settings.jpegQuality]}
-                    onValueChange={(v) => updateSetting("jpegQuality", sliderVal(v))}
-                    min={10}
-                    max={100}
-                    step={5}
-                  />
-                </SettingRow>
+                <SliderRow
+                  label="Quality"
+                  display={`${settings.jpegQuality}%`}
+                  value={settings.jpegQuality}
+                  onChange={(v) => updateSetting("jpegQuality", v)}
+                  min={10}
+                  max={100}
+                  step={5}
+                />
               )}
 
-              <div className="space-y-2 pt-2">
-                <Button
-                  className="w-full gap-2"
-                  onClick={handleExport}
-                >
+              <div className="space-y-2">
+                <Button size="lg" className="w-full" onClick={handleExport}>
                   <DownloadSimpleIcon className="size-4" />
                   Download {settings.exportFormat.toUpperCase()}
                 </Button>
-                <Button
-                  variant="outline"
-                  className="w-full gap-2"
-                  onClick={copyImage}
-                >
+                <Button variant="outline" size="lg" className="w-full" onClick={copyImage}>
                   <ClipboardIcon className="size-4" />
-                  Copy to Clipboard
+                  Copy image
                 </Button>
-                <Button
-                  variant="outline"
-                  className="w-full gap-2"
-                  onClick={shareSettings}
-                >
+                <Button variant="outline" size="lg" className="w-full" onClick={shareSettings}>
                   <ShareNetworkIcon className="size-4" />
-                  Copy Share Link
+                  Copy share link
                 </Button>
               </div>
 
-              <div className="rounded-md border border-border/50 bg-muted/30 p-3 text-[10px] text-muted-foreground">
-                <p>
-                  Output: {previewDims.width}x{previewDims.height}px @{" "}
-                  {settings.pixelDensity}x
+              <dl className="greenbar divide-y divide-border/60 font-mono text-[11px] ring-1 ring-border [--line:28px]">
+                {[
+                  ["Layout size", `${previewDims.width} × ${previewDims.height} px`],
+                  ["Exported pixels", `${actualW} × ${actualH} px`],
+                  ["Density", `${settings.pixelDensity}×`],
+                ].map(([k, v]) => (
+                  <div key={k} className="flex h-7 items-center justify-between px-3">
+                    <dt className="text-muted-foreground">{k}</dt>
+                    <dd className="text-foreground tabular">{v}</dd>
+                  </div>
+                ))}
+              </dl>
+              {previewDims.scale < settings.pixelDensity && (
+                <p className="text-xs text-muted-foreground">
+                  Density was lowered to stay within the browser&apos;s canvas
+                  size limit.
                 </p>
-                <p>
-                  Actual: {Math.ceil(previewDims.width * previewDims.scale)}x
-                  {Math.ceil(previewDims.height * previewDims.scale)}px
-                  {previewDims.scale < settings.pixelDensity &&
-                    " (scale reduced to fit browser limits)"}
-                </p>
-              </div>
+              )}
             </div>
           </ScrollArea>
         </TabsContent>
@@ -1163,13 +1098,23 @@ export default function AsciiGenerator() {
 
   if (!mounted) {
     return (
-      <div className="flex h-dvh items-center justify-center bg-background">
-        <div className="animate-pulse text-sm text-muted-foreground">
-          Loading...
+      <div className="flex h-dvh flex-col bg-background" aria-busy="true">
+        <div className="h-12 border-b border-border" />
+        <div className="grid flex-1 grid-cols-1 md:grid-cols-[28%_1fr_300px]">
+          <div className="greenbar border-r border-border [--line:20px]" />
+          <div className="bg-housing" />
+          <div className="hidden border-l border-border bg-card md:block" />
         </div>
+        <span className="sr-only">Loading the studio</span>
       </div>
     )
   }
+
+  const mobileTabs = [
+    { id: "editor", label: "Text", icon: PencilSimpleIcon },
+    { id: "preview", label: "Preview", icon: ImageSquareIcon },
+    { id: "settings", label: "Style", icon: SlidersHorizontalIcon },
+  ] as const
 
   return (
     <TooltipProvider delay={300}>
@@ -1180,61 +1125,41 @@ export default function AsciiGenerator() {
         }}
       >
         {/* ── Header ── */}
-        <header className="flex h-11 shrink-0 items-center justify-between border-b border-border/50 px-4">
-          <div className="flex items-center gap-3">
-            <h1 className="text-sm font-semibold tracking-tight">
-              <span className="text-primary">ASCII</span>
-              <span className="text-muted-foreground">CRAFT</span>
-            </h1>
-            <Badge variant="secondary" className="h-4 px-1.5 text-[9px]">
-              v1.0
-            </Badge>
+        <header className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-border bg-card px-3 sm:px-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <Wordmark />
+            <span aria-hidden="true" className="hidden h-4 w-px bg-border sm:block" />
+            <span className="hidden truncate text-sm text-muted-foreground sm:block">
+              {imageSource ? imageSource.name : "Studio"}
+            </span>
           </div>
 
           <div className="flex items-center gap-1">
-            <TooltipButton
-              label="Command Palette (Ctrl+K)"
+            <Button
+              variant="ghost"
+              size="sm"
+              className="hidden gap-2 text-muted-foreground md:inline-flex"
               onClick={() => setCommandOpen(true)}
             >
-              <CommandIcon className="size-3.5" />
-            </TooltipButton>
-            <TooltipButton
-              label={resolvedTheme === "dark" ? "Light mode" : "Dark mode"}
-              onClick={() =>
-                setTheme(resolvedTheme === "dark" ? "light" : "dark")
-              }
-            >
-              {resolvedTheme === "dark" ? (
-                <SunIcon className="size-3.5" />
-              ) : (
-                <MoonIcon className="size-3.5" />
-              )}
-            </TooltipButton>
+              <CommandIcon className="size-4" />
+              Commands
+              <kbd className="rounded-sm border border-input px-1 font-mono text-[10px]">
+                {mod} K
+              </kbd>
+            </Button>
+            <ThemeToggle />
+            <Button size="sm" className="ml-1 gap-1.5 px-3" onClick={handleExport}>
+              <DownloadSimpleIcon className="size-4" />
+              Export
+              <span className="hidden font-mono text-[10px] opacity-75 sm:inline">
+                {settings.exportFormat.toUpperCase()}
+              </span>
+            </Button>
           </div>
         </header>
 
-        {/* ── Mobile tabs ── */}
-        {isMobile && (
-          <div className="flex shrink-0 border-b border-border/50">
-            {(["editor", "preview", "settings"] as const).map((v) => (
-              <button
-                key={v}
-                onClick={() => setMobileView(v)}
-                className={cn(
-                  "flex-1 py-2 text-[11px] font-medium capitalize transition-colors",
-                  mobileView === v
-                    ? "border-b-2 border-primary text-foreground"
-                    : "text-muted-foreground"
-                )}
-              >
-                {v}
-              </button>
-            ))}
-          </div>
-        )}
-
         {/* ── Main Content ── */}
-        <main className="flex-1 overflow-hidden">
+        <main className="min-h-0 flex-1">
           {isMobile ? (
             <div className="h-full">
               {/* Keep all panels mounted so the canvas exists for export */}
@@ -1250,48 +1175,143 @@ export default function AsciiGenerator() {
             </div>
           ) : (
             <ResizablePanelGroup orientation="horizontal" className="h-full">
-              <ResizablePanel defaultSize={35} minSize={25}>
+              <ResizablePanel defaultSize={30} minSize={22}>
                 {editorPanel}
               </ResizablePanel>
-              <ResizableHandle withHandle />
-              <ResizablePanel defaultSize={65} minSize={35}>
-                <ResizablePanelGroup orientation="vertical" className="h-full">
-                  <ResizablePanel defaultSize={55} minSize={25}>
-                    {previewPanel}
-                  </ResizablePanel>
-                  <ResizableHandle withHandle />
-                  <ResizablePanel defaultSize={45} minSize={20}>
-                    {customizerPanel}
-                  </ResizablePanel>
-                </ResizablePanelGroup>
+              <ResizableHandle />
+              <ResizablePanel defaultSize={46} minSize={30}>
+                {previewPanel}
+              </ResizablePanel>
+              <ResizableHandle />
+              <ResizablePanel defaultSize={24} minSize={20}>
+                {customizerPanel}
               </ResizablePanel>
             </ResizablePanelGroup>
           )}
         </main>
 
-        {/* ── Status Bar ── */}
-        <footer className="flex h-7 shrink-0 items-center justify-between border-t border-border/50 px-4 text-[10px] text-muted-foreground">
-          <div className="flex items-center gap-3">
-            <span>
-              {rows} rows x {cols} cols
-            </span>
-            <span>{charCount} chars</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <span>{settings.fontFamily}</span>
-            <span>{settings.fontSize}px</span>
-            <span>
-              {settings.exportFormat.toUpperCase()} @{settings.pixelDensity}x
-            </span>
-          </div>
-        </footer>
+        {/* ── Status bar / mobile tabs ── */}
+        {isMobile ? (
+          <nav
+            aria-label="Studio panels"
+            className="grid shrink-0 grid-cols-3 border-t border-border bg-card pb-[env(safe-area-inset-bottom)]"
+          >
+            {mobileTabs.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                type="button"
+                aria-current={mobileView === id ? "page" : undefined}
+                onClick={() => setMobileView(id)}
+                className={cn(
+                  "relative flex h-14 flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors",
+                  mobileView === id
+                    ? "text-foreground after:absolute after:inset-x-6 after:top-0 after:h-0.5 after:bg-primary"
+                    : "text-muted-foreground"
+                )}
+              >
+                <Icon className="size-5" weight={mobileView === id ? "fill" : "regular"} />
+                {label}
+              </button>
+            ))}
+          </nav>
+        ) : (
+          <footer className="flex h-7 shrink-0 items-center justify-between gap-4 border-t border-border bg-card px-4 font-mono text-[11px] text-muted-foreground tabular">
+            <div className="flex items-center gap-4">
+              <span className="flex items-center gap-1.5 text-form">
+                <span aria-hidden="true" className="size-1.5 bg-primary" />
+                Ready
+              </span>
+              <span>
+                {rows} lines × {cols} columns
+              </span>
+              <span>{charCount.toLocaleString()} characters</span>
+            </div>
+            <div className="flex items-center gap-4">
+              <span>
+                {settings.fontFamily} {settings.fontSize} px
+              </span>
+              <span>
+                {settings.exportFormat.toUpperCase()} @ {settings.pixelDensity}×
+              </span>
+            </div>
+          </footer>
+        )}
 
         {/* ── Command Palette ── */}
         <CommandDialog open={commandOpen} onOpenChange={setCommandOpen}>
           <Command>
-            <CommandInput placeholder="Search commands..." />
+            <CommandInput placeholder="Search commands, templates and presets…" />
             <CommandList>
-              <CommandEmpty>No results found.</CommandEmpty>
+              <CommandEmpty>Nothing matches that.</CommandEmpty>
+              <CommandGroup heading="Actions">
+                <CommandItem
+                  onSelect={() => {
+                    fileInputRef.current?.click()
+                    setCommandOpen(false)
+                  }}
+                >
+                  <UploadSimpleIcon className="size-4" />
+                  Convert a photo
+                </CommandItem>
+                <CommandItem
+                  onSelect={() => {
+                    handleExport()
+                    setCommandOpen(false)
+                  }}
+                >
+                  <DownloadSimpleIcon className="size-4" />
+                  Export {settings.exportFormat.toUpperCase()}
+                  <CommandShortcut>{mod} S</CommandShortcut>
+                </CommandItem>
+                <CommandItem
+                  onSelect={() => {
+                    copyImage()
+                    setCommandOpen(false)
+                  }}
+                >
+                  <ClipboardIcon className="size-4" />
+                  Copy image
+                </CommandItem>
+                <CommandItem
+                  onSelect={() => {
+                    copyText()
+                    setCommandOpen(false)
+                  }}
+                >
+                  <CopyIcon className="size-4" />
+                  Copy text
+                </CommandItem>
+                <CommandItem
+                  onSelect={() => {
+                    shareSettings()
+                    setCommandOpen(false)
+                  }}
+                >
+                  <ShareNetworkIcon className="size-4" />
+                  Copy share link
+                </CommandItem>
+                <CommandItem
+                  onSelect={() => {
+                    undo()
+                    setCommandOpen(false)
+                  }}
+                >
+                  <ArrowCounterClockwiseIcon className="size-4" />
+                  Undo
+                  <CommandShortcut>{mod} Z</CommandShortcut>
+                </CommandItem>
+                <CommandItem
+                  onSelect={() => {
+                    redo()
+                    setCommandOpen(false)
+                  }}
+                >
+                  <ArrowClockwiseIcon className="size-4" />
+                  Redo
+                  <CommandShortcut>⇧ {mod} Z</CommandShortcut>
+                </CommandItem>
+              </CommandGroup>
+              <CommandSeparator />
               <CommandGroup heading="Templates">
                 {ASCII_TEMPLATES.map((t) => (
                   <CommandItem
@@ -1302,12 +1322,12 @@ export default function AsciiGenerator() {
                     }}
                   >
                     <ImageIcon className="size-4" />
-                    Insert {t.name}
+                    Insert {t.name.toLowerCase()}
                   </CommandItem>
                 ))}
               </CommandGroup>
               <CommandSeparator />
-              <CommandGroup heading="Themes">
+              <CommandGroup heading="Color presets">
                 {COLOR_THEMES.map((t) => (
                   <CommandItem
                     key={t.name}
@@ -1316,79 +1336,16 @@ export default function AsciiGenerator() {
                       setCommandOpen(false)
                     }}
                   >
-                    <PaletteIcon className="size-4" />
-                    {t.name} theme
+                    <span
+                      aria-hidden="true"
+                      className="size-4 ring-1 ring-border"
+                      style={{
+                        background: `linear-gradient(135deg, ${t.background} 50%, ${t.foreground} 50%)`,
+                      }}
+                    />
+                    {t.name}
                   </CommandItem>
                 ))}
-              </CommandGroup>
-              <CommandSeparator />
-              <CommandGroup heading="Actions">
-                <CommandItem
-                  onSelect={() => {
-                    fileInputRef.current?.click()
-                    setCommandOpen(false)
-                  }}
-                >
-                  <UploadSimpleIcon className="size-4" />
-                  Convert Image to ASCII
-                </CommandItem>
-                <CommandItem
-                  onSelect={() => {
-                    handleExport()
-                    setCommandOpen(false)
-                  }}
-                >
-                  <DownloadSimpleIcon className="size-4" />
-                  Export Image
-                  <CommandShortcut>Ctrl+S</CommandShortcut>
-                </CommandItem>
-                <CommandItem
-                  onSelect={() => {
-                    copyImage()
-                    setCommandOpen(false)
-                  }}
-                >
-                  <ClipboardIcon className="size-4" />
-                  Copy Image to Clipboard
-                </CommandItem>
-                <CommandItem
-                  onSelect={() => {
-                    copyText()
-                    setCommandOpen(false)
-                  }}
-                >
-                  <CopyIcon className="size-4" />
-                  Copy ASCII Text
-                </CommandItem>
-                <CommandItem
-                  onSelect={() => {
-                    shareSettings()
-                    setCommandOpen(false)
-                  }}
-                >
-                  <ShareNetworkIcon className="size-4" />
-                  Copy Share Link
-                </CommandItem>
-                <CommandItem
-                  onSelect={() => {
-                    undo()
-                    setCommandOpen(false)
-                  }}
-                >
-                  <ArrowCounterClockwiseIcon className="size-4" />
-                  Undo
-                  <CommandShortcut>Ctrl+Z</CommandShortcut>
-                </CommandItem>
-                <CommandItem
-                  onSelect={() => {
-                    redo()
-                    setCommandOpen(false)
-                  }}
-                >
-                  <ArrowClockwiseIcon className="size-4" />
-                  Redo
-                  <CommandShortcut>Ctrl+Shift+Z</CommandShortcut>
-                </CommandItem>
               </CommandGroup>
             </CommandList>
           </Command>
@@ -1410,7 +1367,7 @@ export default function AsciiGenerator() {
         {/* Drop overlay — covers the window so dragleave only fires on exit */}
         {dragging && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
+            className="fixed inset-0 z-50 grid place-items-center bg-background/85 p-6"
             onDragOver={(e) => e.preventDefault()}
             onDragLeave={() => setDragging(false)}
             onDrop={(e) => {
@@ -1420,9 +1377,16 @@ export default function AsciiGenerator() {
               if (file) importFile(file)
             }}
           >
-            <div className="pointer-events-none rounded-xl border-2 border-dashed border-primary px-10 py-8 text-center">
-              <ImageIcon className="mx-auto mb-2 size-8 text-primary" />
-              <p className="text-sm font-medium">Drop to convert to ASCII</p>
+            <div className="pointer-events-none grid w-full max-w-md grid-cols-[24px_1fr_24px] bg-background shadow-[0_24px_60px_-30px_var(--shadow)] ring-2 ring-primary">
+              <div className="tractor border-r border-dashed border-input" />
+              <div className="greenbar px-6 py-12 text-center [--line:24px]">
+                <ImageIcon className="mx-auto mb-4 size-8 text-primary" />
+                <p className="font-display text-2xl">Release to print</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Photos convert to ASCII. Text files load as they are.
+                </p>
+              </div>
+              <div className="tractor border-l border-dashed border-input" />
             </div>
           </div>
         )}
@@ -1450,9 +1414,11 @@ function TooltipButton({
         render={
           <Button
             variant="ghost"
-            size="icon-xs"
+            size="icon-sm"
+            aria-label={label}
             onClick={onClick}
             disabled={disabled}
+            className="text-muted-foreground hover:text-foreground"
           />
         }
       >
@@ -1463,64 +1429,202 @@ function TooltipButton({
   )
 }
 
-function SettingRow({
-  label,
-  inline,
+function SectionTrigger({
+  icon: Icon,
   children,
 }: {
-  label: string
-  inline?: boolean
+  icon: React.ElementType
   children: React.ReactNode
 }) {
-  if (inline) {
-    return (
-      <div className="flex items-center justify-between">
-        <Label className="text-[11px] text-muted-foreground">{label}</Label>
-        {children}
-      </div>
-    )
-  }
   return (
-    <div className="space-y-1.5">
-      <Label className="text-[11px] text-muted-foreground">{label}</Label>
-      {children}
+    <AccordionTrigger className="items-center py-3.5 text-sm">
+      <span className="flex items-center gap-2.5">
+        <Icon className="size-4 text-form" />
+        {children}
+      </span>
+    </AccordionTrigger>
+  )
+}
+
+function SliderRow({
+  label,
+  display,
+  value,
+  onChange,
+  min,
+  max,
+  step = 1,
+}: {
+  label: string
+  display: React.ReactNode
+  value: number
+  onChange: (v: number) => void
+  min: number
+  max: number
+  step?: number
+}) {
+  const id = useId()
+  return (
+    <div className="space-y-2.5">
+      <div className="flex items-baseline justify-between gap-2">
+        <span id={id} className="text-xs text-muted-foreground">
+          {label}
+        </span>
+        <output className="font-mono text-[11px] text-form tabular">{display}</output>
+      </div>
+      <Slider
+        aria-labelledby={id}
+        value={[value]}
+        onValueChange={(v) => onChange(sliderVal(v))}
+        min={min}
+        max={max}
+        step={step}
+      />
     </div>
   )
 }
 
-function ColorInput({
+function SwitchRow({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string
+  checked: boolean
+  onChange: (v: boolean) => void
+}) {
+  const id = useId()
+  return (
+    <div className="flex min-h-6 items-center justify-between gap-3">
+      <Label htmlFor={id} className="text-xs font-normal text-muted-foreground">
+        {label}
+      </Label>
+      <Switch id={id} checked={checked} onCheckedChange={onChange} size="sm" />
+    </div>
+  )
+}
+
+function SelectRow({
+  label,
+  value,
+  options,
+  onChange,
+  previewFont,
+}: {
+  label: string
+  value: string
+  options: readonly { value: string; label: string }[]
+  onChange: (v: string) => void
+  previewFont?: boolean
+}) {
+  const id = useId()
+  return (
+    <div className="space-y-2">
+      <span id={id} className="block text-xs text-muted-foreground">
+        {label}
+      </span>
+      <Select
+        value={value}
+        items={options}
+        onValueChange={(v) => v && onChange(v)}
+      >
+        <SelectTrigger aria-labelledby={id} className="h-8 w-full bg-background text-xs">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((o) => (
+            <SelectItem key={o.value} value={o.value}>
+              <span style={previewFont ? { fontFamily: o.value } : undefined}>
+                {o.label}
+              </span>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+}
+
+function Segmented<T extends string | number>({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string
+  value: T
+  options: readonly { value: T; label: string }[]
+  onChange: (v: T) => void
+}) {
+  return (
+    <fieldset>
+      <legend className="mb-2 text-xs text-muted-foreground">{label}</legend>
+      <div
+        className="grid gap-1"
+        style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
+      >
+        {options.map((o) => (
+          <button
+            key={o.value}
+            type="button"
+            aria-pressed={value === o.value}
+            onClick={() => onChange(o.value)}
+            className={cn(
+              "h-8 rounded-sm border text-xs font-medium transition-colors",
+              value === o.value
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-input bg-background text-muted-foreground hover:border-primary hover:text-foreground"
+            )}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
+    </fieldset>
+  )
+}
+
+function ColorRow({
+  label,
   value,
   onChange,
 }: {
+  label: string
   value: string
   onChange: (v: string) => void
 }) {
+  const id = useId()
   return (
-    <div className="flex items-center gap-2">
-      <div className="relative">
+    <div className="flex items-center justify-between gap-3">
+      <Label htmlFor={id} className="text-xs font-normal text-muted-foreground">
+        {label}
+      </Label>
+      <div className="flex items-center gap-1.5">
+        <label className="relative size-8 shrink-0 cursor-pointer ring-1 ring-border focus-within:ring-2 focus-within:ring-ring">
+          <span className="sr-only">Pick {label.toLowerCase()}</span>
+          <input
+            type="color"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="absolute inset-0 size-full cursor-pointer opacity-0"
+          />
+          <span className="block size-full" style={{ backgroundColor: value }} />
+        </label>
         <input
-          type="color"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="absolute inset-0 size-7 cursor-pointer opacity-0"
-        />
-        <div
-          className="size-7 rounded-md border border-border/50 shadow-sm"
-          style={{ backgroundColor: value }}
+          id={id}
+          type="text"
+          // Uncontrolled + keyed so partial hex while typing never reaches the canvas
+          key={value}
+          defaultValue={value}
+          onChange={(e) => {
+            const v = e.target.value
+            if (/^#[0-9a-fA-F]{6}$/.test(v)) onChange(v)
+          }}
+          className="h-8 w-[5.5rem] rounded-sm border border-input bg-background px-2 font-mono text-xs uppercase outline-none focus-visible:border-ring"
+          maxLength={7}
+          spellCheck={false}
         />
       </div>
-      <input
-        type="text"
-        // Uncontrolled + keyed so partial hex while typing never reaches the canvas
-        key={value}
-        defaultValue={value}
-        onChange={(e) => {
-          const v = e.target.value
-          if (/^#[0-9a-fA-F]{6}$/.test(v)) onChange(v)
-        }}
-        className="h-7 w-full rounded-md border border-border/50 bg-transparent px-2 font-mono text-[11px] outline-none focus:border-ring"
-        maxLength={7}
-      />
     </div>
   )
 }

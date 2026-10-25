@@ -31,7 +31,8 @@ function Slider({
       value={value}
       min={min}
       max={max}
-      thumbAlignment="edge"
+      // "center" positions by percentage, so sliders mounted in a hidden panel stay correct
+      thumbAlignment="center"
       {...props}
     >
       <SliderPrimitive.Control className="relative flex w-full touch-none items-center select-none data-disabled:opacity-50 data-vertical:h-full data-vertical:min-h-40 data-vertical:w-auto data-vertical:flex-col">
@@ -48,7 +49,7 @@ function Slider({
           <SliderPrimitive.Thumb
             data-slot="slider-thumb"
             key={index}
-            className="relative block size-3 shrink-0 rounded-none border border-ring bg-white ring-ring/50 transition-[color,box-shadow] select-none after:absolute after:-inset-2 hover:ring-1 focus-visible:ring-1 focus-visible:outline-hidden active:ring-1 disabled:pointer-events-none disabled:opacity-50"
+            className="relative block size-3.5 shrink-0 rounded-[2px] border-2 border-primary bg-background ring-ring/50 transition-[color,box-shadow] select-none after:absolute after:-inset-2 hover:ring-1 focus-visible:ring-1 focus-visible:outline-hidden active:ring-1 disabled:pointer-events-none disabled:opacity-50"
           />
         ))}
       </SliderPrimitive.Control>
