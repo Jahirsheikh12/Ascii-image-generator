@@ -7,7 +7,8 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import {
   HeroPrinter,
   PhotoPrint,
-  TreatmentSheet,
+  FinishPicker,
+  PrintOnView,
 } from "@/components/landing-demo"
 import { ASCII_TEMPLATES } from "@/lib/ascii-data"
 
@@ -79,7 +80,7 @@ export default function Home() {
         <div aria-hidden="true" className="tractor border-r border-dashed border-input" />
 
         <div className="greenbar min-w-0 [--line:24px]">
-          <header className="flex h-16 items-center justify-between gap-4 bg-background px-5 sm:px-8 lg:px-12">
+          <header className="sticky top-0 z-40 flex h-16 items-center justify-between gap-4 bg-background px-5 shadow-[0_1px_0_var(--border)] sm:px-8 lg:px-12">
             <Wordmark />
             <nav aria-label="Main" className="flex items-center gap-1 sm:gap-2">
               <a
@@ -120,7 +121,7 @@ export default function Home() {
             <section
               id="start"
               aria-labelledby="start-title"
-              className="scroll-mt-4 px-5 py-20 sm:px-8 lg:px-12 lg:py-28"
+              className="scroll-mt-20 px-5 py-16 sm:px-8 lg:px-12 lg:py-24"
             >
               <div className="max-w-2xl">
                 <h2
@@ -135,30 +136,38 @@ export default function Home() {
                 </p>
               </div>
 
-              <div className="mt-14 border-t-2 border-foreground">
+              <div className="mt-12 border-t-2 border-foreground">
                 {[
                   {
                     title: "Type it",
                     body: "Type or paste anything: box drawings, banners, signatures, logs. Undo and redo keep up with you.",
                     art: (
-                      <pre className="m-0 font-mono text-[13px] leading-[24px]">
-                        {TYPED}
-                      </pre>
+                      <PrintOnView rows={TYPED.split("\n").length}>
+                        <pre className="m-0 font-mono text-[13px] leading-[24px]">
+                          {TYPED}
+                        </pre>
+                      </PrintOnView>
                     ),
                   },
                   {
                     title: "Start from a template",
                     body: `Eight ready pieces: ${ASCII_TEMPLATES.map((t) => t.name.toLowerCase()).join(", ")}.`,
                     art: (
-                      <pre className="m-0 font-mono text-[13px] leading-[24px]">
-                        {rocket}
-                      </pre>
+                      <PrintOnView rows={rocket.split("\n").length}>
+                        <pre className="m-0 font-mono text-[13px] leading-[24px]">
+                          {rocket}
+                        </pre>
+                      </PrintOnView>
                     ),
                   },
                   {
                     title: "Drop a photo",
                     body: "Drop, paste or pick an image. Choose the columns and character set, then brightness, contrast, color and dithering. This one is set in blocks.",
-                    art: <PhotoPrint />,
+                    art: (
+                      <PrintOnView rows={17}>
+                        <PhotoPrint />
+                      </PrintOnView>
+                    ),
                   },
                 ].map((row) => (
                   <article
@@ -182,23 +191,22 @@ export default function Home() {
             <section
               id="treatments"
               aria-labelledby="treatments-title"
-              className="scroll-mt-4 px-5 py-20 sm:px-8 lg:px-12 lg:py-28"
+              className="scroll-mt-20 px-5 py-16 sm:px-8 lg:px-12 lg:py-24"
             >
               <div className="grid gap-6 lg:grid-cols-12">
                 <h2
                   id="treatments-title"
                   className="font-display text-[clamp(1.9rem,3.4vw,3rem)] leading-[1.02] lg:col-span-6"
                 >
-                  One print, six finishes.
+                  Try a finish.
                 </h2>
                 <p className="text-lg leading-relaxed text-muted-foreground lg:col-span-5 lg:col-start-8 lg:self-end">
-                  These are live renders from the same engine that writes your
-                  export. Same characters each time; only the studio settings
-                  change.
+                  This is the export engine running live. Pick a color preset,
+                  effects and a frame; the studio has all of these and more.
                 </p>
               </div>
-              <div className="mt-14">
-                <TreatmentSheet />
+              <div className="mt-12">
+                <FinishPicker />
               </div>
             </section>
             <Tear page={3} />
@@ -206,7 +214,7 @@ export default function Home() {
             {/* The studio */}
             <section
               aria-labelledby="studio-title"
-              className="px-5 py-20 sm:px-8 lg:px-12 lg:py-28"
+              className="px-5 py-16 sm:px-8 lg:px-12 lg:py-24"
             >
               <div className="grid gap-12 lg:grid-cols-12">
                 <div className="lg:col-span-4">
@@ -251,9 +259,9 @@ export default function Home() {
             <section
               id="output"
               aria-labelledby="output-title"
-              className="scroll-mt-4 px-5 py-20 sm:px-8 lg:px-12 lg:py-28"
+              className="scroll-mt-20 px-5 py-16 sm:px-8 lg:px-12 lg:py-24"
             >
-              <div className="grid gap-14 lg:grid-cols-12">
+              <div className="grid gap-12 lg:grid-cols-12 lg:items-end">
                 <div className="lg:col-span-7">
                   <h2
                     id="output-title"
@@ -269,7 +277,7 @@ export default function Home() {
                     <Leaders rows={OUTPUTS} />
                   </div>
                 </div>
-                <aside className="self-start bg-primary p-8 text-primary-foreground sm:p-10 lg:col-span-4 lg:col-start-9 lg:mt-24">
+                <aside className="bg-primary p-8 text-primary-foreground sm:p-10 lg:col-span-4 lg:col-start-9">
                   <h3 className="font-display text-2xl leading-tight">
                     Your photos never leave this tab.
                   </h3>
@@ -285,7 +293,7 @@ export default function Home() {
             <Tear page={5} />
 
             {/* Close */}
-            <section className="px-5 py-24 text-center sm:px-8 lg:px-12 lg:py-32">
+            <section className="px-5 py-20 text-center sm:px-8 lg:px-12 lg:py-24">
               <h2 className="font-display mx-auto max-w-3xl text-[clamp(2.2rem,5vw,4.5rem)] leading-[0.98]">
                 Feed it a photo.
               </h2>
