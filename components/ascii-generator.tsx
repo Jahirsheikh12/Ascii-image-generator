@@ -28,6 +28,7 @@ import {
   FrameCornersIcon,
   ImageIcon,
   ClipboardIcon,
+  XIcon,
 } from "@phosphor-icons/react"
 
 import { cn } from "@/lib/utils"
@@ -90,6 +91,15 @@ import {
   EXPORT_FORMATS,
 } from "@/lib/ascii-data"
 import { renderAsciiToCanvas, generateSVG } from "@/lib/render-ascii"
+import {
+  type ImageAsciiOptions,
+  CHARSETS,
+  DEFAULT_IMAGE_OPTIONS,
+  MAX_COLUMNS,
+  imageToAscii,
+  isLightColor,
+  loadImageFile,
+} from "@/lib/image-to-ascii"
 
 // ─── Helpers ───
 
@@ -118,7 +128,20 @@ export default function AsciiGenerator() {
   const [redoStack, setRedoStack] = useState<string[]>([])
   const [settings, setSettings] = useState<GeneratorSettings>(DEFAULT_SETTINGS)
   const [commandOpen, setCommandOpen] = useState(false)
-  const [previewDims, setPreviewDims] = useState({ width: 0, height: 0 })
+  const [previewDims, setPreviewDims] = useState({
+    width: 0,
+    height: 0,
+    scale: 1,
+  })
+  // While an image is attached, the ASCII text is derived from it
+  const [imageSource, setImageSource] = useState<{
+    canvas: HTMLCanvasElement
+    thumb: string
+    name: string
+  } | null>(null)
+  const [imageOpts, setImageOpts] =
+    useState<ImageAsciiOptions>(DEFAULT_IMAGE_OPTIONS)
+  const [dragging, setDragging] = useState(false)
   const [mobileView, setMobileView] = useState<
     "editor" | "preview" | "settings"
   >("editor")
@@ -149,36 +172,71 @@ export default function AsciiGenerator() {
     []
   )
 
-  // --- Text change with undo ---
+  const updateImageOpt = useCallback(
+    <K extends keyof ImageAsciiOptions>(key: K, value: ImageAsciiOptions[K]) => {
+      setImageOpts((prev) => ({ ...prev, [key]: value }))
+    },
+    []
+  )
+
+  // --- Image → ASCII ---
+  const lightBg = isLightColor(settings.backgroundColor)
+  const charAspect =
+    (settings.fontSize * 0.6 + settings.letterSpacing) /
+    (settings.fontSize * settings.lineHeight)
+  const imageResult = useMemo(
+    () =>
+      imageSource
+        ? imageToAscii(imageSource.canvas, imageOpts, charAspect, lightBg)
+        : null,
+    [imageSource, imageOpts, charAspect, lightBg]
+  )
+  const asciiText = imageResult?.text ?? text
+  const charColors = imageResult?.colors ?? null
+
+  // --- Text change with undo (editing detaches the image) ---
   const handleTextChange = useCallback(
     (newText: string) => {
-      setUndoStack((prev) => [...prev.slice(-50), text])
+      setUndoStack((prev) => [...prev.slice(-50), asciiText])
       setRedoStack([])
       setText(newText)
+      setImageSource(null)
     },
-    [text]
+    [asciiText]
   )
 
   const undo = useCallback(() => {
     if (undoStack.length === 0) return
-    setRedoStack((r) => [...r, text])
+    setRedoStack((r) => [...r, asciiText])
     setText(undoStack[undoStack.length - 1])
     setUndoStack((s) => s.slice(0, -1))
-  }, [undoStack, text])
+    setImageSource(null)
+  }, [undoStack, asciiText])
 
   const redo = useCallback(() => {
     if (redoStack.length === 0) return
-    setUndoStack((s) => [...s, text])
+    setUndoStack((s) => [...s, asciiText])
     setText(redoStack[redoStack.length - 1])
     setRedoStack((r) => r.slice(0, -1))
-  }, [redoStack, text])
+    setImageSource(null)
+  }, [redoStack, asciiText])
+
+  const detachImage = useCallback(() => {
+    setText(asciiText)
+    setImageSource(null)
+  }, [asciiText])
 
   // --- Canvas rendering (debounced) ---
   useEffect(() => {
     if (renderTimeout.current) clearTimeout(renderTimeout.current)
     renderTimeout.current = setTimeout(() => {
       if (canvasRef.current) {
-        const dims = renderAsciiToCanvas(canvasRef.current, text, settings)
+        const dims = renderAsciiToCanvas(
+          canvasRef.current,
+          asciiText,
+          settings,
+          charColors
+        )
         setPreviewDims(dims)
       }
     }, 60)
@@ -186,14 +244,14 @@ export default function AsciiGenerator() {
       if (renderTimeout.current) clearTimeout(renderTimeout.current)
     }
     // mounted/isMobile swap the layout, which mounts a fresh canvas
-  }, [text, settings, mounted, isMobile])
+  }, [asciiText, charColors, settings, mounted, isMobile])
 
   // --- Export ---
   const handleExport = useCallback(() => {
     if (!canvasRef.current) return
     const fmt = settings.exportFormat
     if (fmt === "svg") {
-      const svg = generateSVG(text, settings)
+      const svg = generateSVG(asciiText, settings, charColors)
       downloadBlob(new Blob([svg], { type: "image/svg+xml" }), "ascii-art.svg")
     } else {
       const mimeMap: Record<string, string> = {
@@ -219,7 +277,7 @@ export default function AsciiGenerator() {
       return
     }
     toast.success("Image exported!")
-  }, [text, settings])
+  }, [asciiText, charColors, settings])
 
   // --- Copy image ---
   const copyImage = useCallback(async () => {
@@ -240,27 +298,52 @@ export default function AsciiGenerator() {
   }, [])
 
   const copyText = useCallback(() => {
-    navigator.clipboard.writeText(text).then(
+    navigator.clipboard.writeText(asciiText).then(
       () => toast.success("ASCII art copied!"),
       () => toast.error("Failed to copy text")
     )
-  }, [text])
+  }, [asciiText])
 
-  // --- Import file ---
+  // --- Import file (image → converted, text → loaded as-is) ---
   const importFile = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0]
-      if (!file) return
-      const reader = new FileReader()
-      reader.onload = () => {
-        handleTextChange(reader.result as string)
+    async (file: File) => {
+      if (file.type.startsWith("image/")) {
+        try {
+          const { canvas, thumb } = await loadImageFile(file)
+          setUndoStack((prev) => [...prev.slice(-50), asciiText])
+          setRedoStack([])
+          setImageSource({ canvas, thumb, name: file.name || "Pasted image" })
+          toast.success("Image converted to ASCII!")
+        } catch {
+          toast.error("Couldn't read that image")
+        }
+      } else if (
+        !file.type ||
+        file.type.startsWith("text/") ||
+        /\.(txt|asc)$/i.test(file.name)
+      ) {
+        handleTextChange(await file.text())
         toast.success("File imported!")
+      } else {
+        toast.error("Unsupported file. Use an image or a .txt file")
       }
-      reader.readAsText(file)
-      e.target.value = ""
     },
-    [handleTextChange]
+    [asciiText, handleTextChange]
   )
+
+  // --- Paste an image anywhere ---
+  useEffect(() => {
+    const handler = (e: ClipboardEvent) => {
+      const file = Array.from(e.clipboardData?.files ?? []).find((f) =>
+        f.type.startsWith("image/")
+      )
+      if (!file) return
+      e.preventDefault()
+      importFile(file)
+    }
+    window.addEventListener("paste", handler)
+    return () => window.removeEventListener("paste", handler)
+  }, [importFile])
 
   // --- Theme application ---
   const applyTheme = useCallback((t: ColorTheme) => {
@@ -279,7 +362,7 @@ export default function AsciiGenerator() {
   const shareSettings = useCallback(() => {
     try {
       const encoded = btoa(
-        encodeURIComponent(JSON.stringify({ text, settings }))
+        encodeURIComponent(JSON.stringify({ text: asciiText, settings }))
       )
       const url = `${window.location.origin}${window.location.pathname}#${encoded}`
       navigator.clipboard.writeText(url).then(
@@ -289,7 +372,7 @@ export default function AsciiGenerator() {
     } catch {
       toast.error("Failed to generate share link")
     }
-  }, [text, settings])
+  }, [asciiText, settings])
 
   // --- Load from URL hash ---
   useEffect(() => {
@@ -342,15 +425,151 @@ export default function AsciiGenerator() {
   }, [undo, redo, handleExport])
 
   // --- Computed ---
-  const lines = useMemo(() => text.split("\n"), [text])
+  const lines = useMemo(() => asciiText.split("\n"), [asciiText])
   const rows = lines.length
   const cols = Math.max(...lines.map((l) => l.length), 0)
-  const charCount = text.length
+  const charCount = asciiText.length
 
   // ─── Render sections ───
 
+  const imagePanel = imageSource ? (
+    <div className="max-h-[50%] shrink-0 overflow-y-auto border-b border-border/50 p-3">
+      <div className="mb-3 flex items-center gap-2">
+        <div
+          className="size-9 shrink-0 rounded-md border border-border/50 bg-contain bg-center bg-no-repeat"
+          style={{ backgroundImage: `url(${imageSource.thumb})` }}
+        />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[11px] font-medium">{imageSource.name}</p>
+          <p className="text-[10px] text-muted-foreground">
+            {imageSource.canvas.width}x{imageSource.canvas.height}px → {cols}x
+            {rows} chars
+          </p>
+        </div>
+        <TooltipButton
+          label="Replace image"
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <UploadSimpleIcon className="size-3.5" />
+        </TooltipButton>
+        <TooltipButton label="Detach image (keep text)" onClick={detachImage}>
+          <XIcon className="size-3.5" />
+        </TooltipButton>
+      </div>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+        <SettingRow label={`Columns: ${imageOpts.columns}`}>
+          <Slider
+            value={[imageOpts.columns]}
+            onValueChange={(v) => updateImageOpt("columns", sliderVal(v))}
+            min={20}
+            max={MAX_COLUMNS}
+            step={1}
+          />
+        </SettingRow>
+        <SettingRow label="Characters">
+          <Select
+            value={imageOpts.charset}
+            items={CHARSETS}
+            onValueChange={(v) => v && updateImageOpt("charset", v)}
+          >
+            <SelectTrigger className="h-7 w-full text-[11px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {CHARSETS.map((c) => (
+                <SelectItem key={c.value} value={c.value}>
+                  {c.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </SettingRow>
+        {imageOpts.charset === "custom" && (
+          <div className="col-span-2">
+            <SettingRow label="Custom ramp (light → dense)">
+              <input
+                type="text"
+                value={imageOpts.customChars}
+                onChange={(e) => updateImageOpt("customChars", e.target.value)}
+                spellCheck={false}
+                className="h-7 w-full rounded-md border border-border/50 bg-transparent px-2 font-mono text-[11px] outline-none focus:border-ring"
+              />
+            </SettingRow>
+          </div>
+        )}
+        <SettingRow label={`Brightness: ${imageOpts.brightness}`}>
+          <Slider
+            value={[imageOpts.brightness]}
+            onValueChange={(v) => updateImageOpt("brightness", sliderVal(v))}
+            min={-100}
+            max={100}
+            step={1}
+          />
+        </SettingRow>
+        <SettingRow label={`Contrast: ${imageOpts.contrast}`}>
+          <Slider
+            value={[imageOpts.contrast]}
+            onValueChange={(v) => updateImageOpt("contrast", sliderVal(v))}
+            min={-100}
+            max={100}
+            step={1}
+          />
+        </SettingRow>
+        <SettingRow label="Color" inline>
+          <Switch
+            checked={imageOpts.color}
+            onCheckedChange={(v) => updateImageOpt("color", v)}
+            size="sm"
+          />
+        </SettingRow>
+        <SettingRow label="Dither" inline>
+          <Switch
+            checked={imageOpts.dither}
+            onCheckedChange={(v) => updateImageOpt("dither", v)}
+            size="sm"
+          />
+        </SettingRow>
+        <SettingRow label="Invert" inline>
+          <Switch
+            checked={imageOpts.invert}
+            onCheckedChange={(v) => updateImageOpt("invert", v)}
+            size="sm"
+          />
+        </SettingRow>
+        <button
+          onClick={() => setImageOpts(DEFAULT_IMAGE_OPTIONS)}
+          className="justify-self-end text-[10px] text-muted-foreground hover:text-foreground"
+        >
+          Reset
+        </button>
+      </div>
+      <p className="mt-3 text-[10px] text-muted-foreground/60">
+        Editing the text below detaches the image.
+      </p>
+    </div>
+  ) : (
+    <div className="shrink-0 border-b border-border/50 p-3">
+      <button
+        onClick={() => fileInputRef.current?.click()}
+        className="flex w-full items-center gap-3 rounded-md border border-dashed border-border px-3 py-3 text-left transition-all hover:border-primary/50 hover:bg-primary/5"
+      >
+        <ImageIcon className="size-5 shrink-0 text-primary" />
+        <span>
+          <span className="block text-[11px] font-medium">
+            Convert an image to ASCII
+          </span>
+          <span className="block text-[10px] text-muted-foreground">
+            Click, drop or paste an image
+          </span>
+        </span>
+      </button>
+    </div>
+  )
+
   const editorPanel = (
     <div className="flex h-full flex-col">
+      {imagePanel}
+
       {/* Templates */}
       <div className="shrink-0 border-b border-border/50 p-3">
         <p className="mb-2 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
@@ -372,7 +591,7 @@ export default function AsciiGenerator() {
       {/* Textarea */}
       <div className="relative flex-1 overflow-hidden">
         <textarea
-          value={text}
+          value={asciiText}
           onChange={(e) => handleTextChange(e.target.value)}
           spellCheck={false}
           className="ascii-textarea size-full resize-none border-none bg-transparent p-4 font-mono text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground/40"
@@ -392,7 +611,7 @@ export default function AsciiGenerator() {
         <TooltipButton label="Copy text" onClick={copyText}>
           <CopyIcon className="size-3.5" />
         </TooltipButton>
-        <TooltipButton label="Import .txt file" onClick={() => fileInputRef.current?.click()}>
+        <TooltipButton label="Import image or .txt file" onClick={() => fileInputRef.current?.click()}>
           <UploadSimpleIcon className="size-3.5" />
         </TooltipButton>
         <TooltipButton
@@ -786,6 +1005,7 @@ export default function AsciiGenerator() {
                       <SettingRow label="Frame">
                         <Select
                           value={settings.frameTemplate}
+                          items={FRAME_TEMPLATES}
                           onValueChange={(v) =>
                             v && updateSetting("frameTemplate", v)
                           }
@@ -805,6 +1025,7 @@ export default function AsciiGenerator() {
                       <SettingRow label="Border Style">
                         <Select
                           value={settings.borderStyle}
+                          items={BORDER_STYLES}
                           onValueChange={(v) =>
                             v && updateSetting("borderStyle", v)
                           }
@@ -925,8 +1146,10 @@ export default function AsciiGenerator() {
                   {settings.pixelDensity}x
                 </p>
                 <p>
-                  Actual: {previewDims.width * settings.pixelDensity}x
-                  {previewDims.height * settings.pixelDensity}px
+                  Actual: {Math.ceil(previewDims.width * previewDims.scale)}x
+                  {Math.ceil(previewDims.height * previewDims.scale)}px
+                  {previewDims.scale < settings.pixelDensity &&
+                    " (scale reduced to fit browser limits)"}
                 </p>
               </div>
             </div>
@@ -950,7 +1173,12 @@ export default function AsciiGenerator() {
 
   return (
     <TooltipProvider delay={300}>
-      <div className="flex h-dvh flex-col overflow-hidden bg-background text-foreground">
+      <div
+        className="flex h-dvh flex-col overflow-hidden bg-background text-foreground"
+        onDragEnter={(e) => {
+          if (e.dataTransfer.types.includes("Files")) setDragging(true)
+        }}
+      >
         {/* ── Header ── */}
         <header className="flex h-11 shrink-0 items-center justify-between border-b border-border/50 px-4">
           <div className="flex items-center gap-3">
@@ -1097,6 +1325,15 @@ export default function AsciiGenerator() {
               <CommandGroup heading="Actions">
                 <CommandItem
                   onSelect={() => {
+                    fileInputRef.current?.click()
+                    setCommandOpen(false)
+                  }}
+                >
+                  <UploadSimpleIcon className="size-4" />
+                  Convert Image to ASCII
+                </CommandItem>
+                <CommandItem
+                  onSelect={() => {
                     handleExport()
                     setCommandOpen(false)
                   }}
@@ -1161,10 +1398,34 @@ export default function AsciiGenerator() {
         <input
           ref={fileInputRef}
           type="file"
-          accept=".txt,.asc"
+          accept="image/*,.txt,.asc"
           className="hidden"
-          onChange={importFile}
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            if (file) importFile(file)
+            e.target.value = ""
+          }}
         />
+
+        {/* Drop overlay — covers the window so dragleave only fires on exit */}
+        {dragging && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
+            onDragOver={(e) => e.preventDefault()}
+            onDragLeave={() => setDragging(false)}
+            onDrop={(e) => {
+              e.preventDefault()
+              setDragging(false)
+              const file = e.dataTransfer.files[0]
+              if (file) importFile(file)
+            }}
+          >
+            <div className="pointer-events-none rounded-xl border-2 border-dashed border-primary px-10 py-8 text-center">
+              <ImageIcon className="mx-auto mb-2 size-8 text-primary" />
+              <p className="text-sm font-medium">Drop to convert to ASCII</p>
+            </div>
+          </div>
+        )}
       </div>
     </TooltipProvider>
   )
