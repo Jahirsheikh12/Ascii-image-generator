@@ -110,7 +110,7 @@ export function SelectRow({
         items={options}
         onValueChange={(v) => v && onChange(v)}
       >
-        <SelectTrigger aria-labelledby={id} className="h-8 w-full bg-background text-xs">
+        <SelectTrigger aria-labelledby={id} className="h-8 w-full bg-background text-xs pointer-coarse:h-10">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -152,7 +152,7 @@ export function Segmented<T extends string | number>({
             aria-pressed={value === o.value}
             onClick={() => onChange(o.value)}
             className={cn(
-              "h-8 truncate rounded-sm border px-1 text-xs font-medium transition-colors",
+              "h-8 truncate rounded-sm border px-1 text-xs font-medium transition-colors pointer-coarse:h-10",
               value === o.value
                 ? "border-primary bg-primary text-primary-foreground"
                 : "border-input bg-background text-muted-foreground hover:border-primary hover:text-foreground"
@@ -182,7 +182,7 @@ export function ColorRow({
         {label}
       </Label>
       <div className="flex items-center gap-1.5">
-        <label className="relative size-8 shrink-0 cursor-pointer ring-1 ring-border focus-within:ring-2 focus-within:ring-ring">
+        <label className="relative size-8 shrink-0 cursor-pointer pointer-coarse:size-10 ring-1 ring-border focus-within:ring-2 focus-within:ring-ring">
           <span className="sr-only">Pick {label.toLowerCase()}</span>
           <input
             type="color"
@@ -202,7 +202,7 @@ export function ColorRow({
             const v = e.target.value
             if (/^#[0-9a-fA-F]{6}$/.test(v)) onChange(v)
           }}
-          className="h-8 w-[5.5rem] rounded-sm border border-input bg-background px-2 font-mono text-xs uppercase outline-none focus-visible:border-ring"
+          className="h-8 w-[5.5rem] rounded-sm border border-input bg-background px-2 font-mono text-xs uppercase outline-none focus-visible:border-ring pointer-coarse:h-10 pointer-coarse:w-[6.5rem] pointer-coarse:text-base"
           maxLength={7}
           spellCheck={false}
         />

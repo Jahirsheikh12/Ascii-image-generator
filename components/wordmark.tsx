@@ -23,7 +23,7 @@ export function Wordmark({ className }: { className?: string }) {
     <Link
       href="/"
       className={cn(
-        "inline-flex items-center gap-2 rounded-sm text-foreground",
+        "-my-3 inline-flex items-center gap-2 rounded-sm py-3 text-foreground",
         className
       )}
     >

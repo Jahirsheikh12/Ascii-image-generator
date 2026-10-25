@@ -257,7 +257,12 @@ export function HeroPrinter() {
             </Button>
           </div>
           <p className="mt-4 text-sm text-muted-foreground">
-            Or drop or paste an image anywhere on this page.
+            <span className="pointer-coarse:hidden">
+              Or drop or paste an image anywhere on this page.
+            </span>
+            <span className="hidden pointer-coarse:inline">
+              Or tap the sheet to pick a photo.
+            </span>
           </p>
         </div>
 
@@ -367,7 +372,7 @@ export function HeroPrinter() {
                     aria-pressed={charset === c.value}
                     onClick={() => setCharset(c.value)}
                     className={cn(
-                      "h-8 rounded-sm border px-3 text-sm transition-colors",
+                      "h-8 rounded-sm border px-3 text-sm transition-colors pointer-coarse:h-10",
                       charset === c.value
                         ? "border-primary bg-primary text-primary-foreground"
                         : "border-input bg-background hover:border-primary hover:text-foreground"

@@ -121,6 +121,14 @@ function downloadBlob(blob: Blob, filename: string) {
 // Editor line metrics: bars span three lines, like the paper
 const EDITOR_LINE = 20
 
+// Tablets and small laptops get two panes; three only fit from 1280px
+const COMPACT_QUERY = "(max-width: 1279px)"
+const subscribeCompact = (onChange: () => void) => {
+  const mql = window.matchMedia(COMPACT_QUERY)
+  mql.addEventListener("change", onChange)
+  return () => mql.removeEventListener("change", onChange)
+}
+
 // New sessions start on Fanfold paper; shared links still merge over DEFAULT_SETTINGS keys
 const freshSettings = (): GeneratorSettings => ({
   ...DEFAULT_SETTINGS,
@@ -164,6 +172,12 @@ export default function AsciiGenerator() {
 
   // --- Hooks ---
   const isMobile = useIsMobile()
+  const isCompact = useSyncExternalStore(
+    subscribeCompact,
+    () => window.matchMedia(COMPACT_QUERY).matches,
+    () => false
+  )
+  const isTablet = isCompact && !isMobile
   // false during SSR/hydration, true on the client — avoids theme flash
   const mounted = useSyncExternalStore(
     () => () => {},
@@ -259,8 +273,8 @@ export default function AsciiGenerator() {
     return () => {
       if (renderTimeout.current) clearTimeout(renderTimeout.current)
     }
-    // mounted/isMobile swap the layout, which mounts a fresh canvas
-  }, [asciiText, charColors, settings, mounted, isMobile])
+    // mounted/isMobile/isTablet swap the layout, which mounts a fresh canvas
+  }, [asciiText, charColors, settings, mounted, isMobile, isTablet])
 
   // --- Stage size, for fitting the preview (it remounts with the layout) ---
   useEffect(() => {
@@ -271,7 +285,7 @@ export default function AsciiGenerator() {
     )
     ro.observe(el)
     return () => ro.disconnect()
-  }, [mounted, isMobile])
+  }, [mounted, isMobile, isTablet])
 
   // --- Export ---
   const handleExport = useCallback(() => {
@@ -341,6 +355,7 @@ export default function AsciiGenerator() {
           setRedoStack([])
           setImageSource({ canvas, thumb, name: file.name || "Pasted image" })
           toast.success("Image converted to ASCII!")
+          if (isMobile) setMobileView("preview")
         } catch {
           toast.error("Couldn't read that image")
         }
@@ -355,7 +370,7 @@ export default function AsciiGenerator() {
         toast.error("Unsupported file. Use an image or a .txt file")
       }
     },
-    [asciiText, handleTextChange]
+    [asciiText, handleTextChange, isMobile]
   )
 
   // --- Paste an image anywhere ---
@@ -525,7 +540,7 @@ export default function AsciiGenerator() {
               value={imageOpts.customChars}
               onChange={(e) => updateImageOpt("customChars", e.target.value)}
               spellCheck={false}
-              className="h-8 w-full rounded-sm border border-input bg-background px-2.5 font-mono text-xs outline-none focus-visible:border-ring"
+              className="h-8 w-full rounded-sm border border-input bg-background px-2.5 font-mono text-xs outline-none focus-visible:border-ring pointer-coarse:h-10 pointer-coarse:text-base"
             />
           </div>
         )}
@@ -585,7 +600,8 @@ export default function AsciiGenerator() {
         <span>
           <span className="block text-sm font-medium">Convert a photo</span>
           <span className="block text-xs text-muted-foreground">
-            Drop, paste or choose an image
+            <span className="pointer-coarse:hidden">Drop, paste or choose an image</span>
+            <span className="hidden pointer-coarse:inline">Choose a photo from your device</span>
           </span>
         </span>
       </button>
@@ -597,9 +613,10 @@ export default function AsciiGenerator() {
       {imagePanel}
 
       {/* Templates, foldable to give the editor its height back */}
+      {/* Starts folded on phones so the editor keeps its height */}
       <details
         ref={templatesRef}
-        open
+        open={!isMobile}
         className="group/tpl shrink-0 border-b border-border"
       >
         <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-xs font-medium text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
@@ -661,7 +678,7 @@ export default function AsciiGenerator() {
               gutterRef.current.scrollTop = e.currentTarget.scrollTop
           }}
           spellCheck={false}
-          className="ascii-textarea greenbar size-full resize-none border-none bg-local px-4 py-[20px] font-mono text-[13px] text-foreground outline-none placeholder:text-muted-foreground [--line:20px] [background-origin:content-box]"
+          className="ascii-textarea greenbar size-full resize-none border-none bg-local px-4 py-[20px] font-mono text-[13px] text-foreground pointer-coarse:text-base outline-none placeholder:text-muted-foreground [--line:20px] [background-origin:content-box]"
           style={{ lineHeight: `${EDITOR_LINE}px` }}
           placeholder="Type or paste ASCII art here…"
         />
@@ -825,7 +842,7 @@ export default function AsciiGenerator() {
     <div className="flex h-full flex-col overflow-hidden bg-card">
       <Tabs defaultValue="customize" className="flex h-full flex-col gap-0">
         <div className="flex h-11 shrink-0 items-end border-b border-border px-3">
-          <TabsList variant="line" className="h-9">
+          <TabsList variant="line" className="h-9 pointer-coarse:h-11">
             <TabsTrigger value="customize" className="px-2 text-sm">
               Style
             </TabsTrigger>
@@ -1158,7 +1175,7 @@ export default function AsciiGenerator() {
   const mobileTabs = [
     { id: "editor", label: "Text", icon: PencilSimpleIcon },
     { id: "preview", label: "Preview", icon: ImageSquareIcon },
-    { id: "settings", label: "Style", icon: SlidersHorizontalIcon },
+    { id: "settings", label: "Settings", icon: SlidersHorizontalIcon },
   ] as const
 
   return (
@@ -1218,6 +1235,54 @@ export default function AsciiGenerator() {
                 {customizerPanel}
               </div>
             </div>
+          ) : isTablet ? (
+            <ResizablePanelGroup orientation="horizontal" className="h-full">
+              <ResizablePanel defaultSize={42} minSize={32}>
+                <div className="flex h-full flex-col">
+                  <div className="grid h-11 shrink-0 grid-cols-2 border-b border-border bg-card px-2">
+                    {(
+                      [
+                        ["editor", "Text", PencilSimpleIcon],
+                        ["settings", "Settings", SlidersHorizontalIcon],
+                      ] as const
+                    ).map(([id, label, Icon]) => {
+                      const active =
+                        id === "settings"
+                          ? mobileView === "settings"
+                          : mobileView !== "settings"
+                      return (
+                        <button
+                          key={id}
+                          type="button"
+                          aria-pressed={active}
+                          onClick={() => setMobileView(id)}
+                          className={cn(
+                            "relative flex items-center justify-center gap-2 text-sm font-medium transition-colors",
+                            active
+                              ? "text-foreground after:absolute after:inset-x-6 after:bottom-0 after:h-0.5 after:bg-primary"
+                              : "text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          <Icon className="size-4" weight={active ? "fill" : "regular"} />
+                          {label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  {/* Keep both mounted so state and scroll position survive switching */}
+                  <div className={cn("min-h-0 flex-1", mobileView === "settings" && "hidden")}>
+                    {editorPanel}
+                  </div>
+                  <div className={cn("min-h-0 flex-1", mobileView !== "settings" && "hidden")}>
+                    {customizerPanel}
+                  </div>
+                </div>
+              </ResizablePanel>
+              <ResizableHandle />
+              <ResizablePanel defaultSize={58} minSize={40}>
+                {previewPanel}
+              </ResizablePanel>
+            </ResizablePanelGroup>
           ) : (
             <ResizablePanelGroup orientation="horizontal" className="h-full">
               <ResizablePanel defaultSize={30} minSize={22}>
