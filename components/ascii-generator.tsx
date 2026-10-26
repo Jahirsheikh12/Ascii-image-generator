@@ -592,9 +592,9 @@ export default function AsciiGenerator() {
       <button
         type="button"
         onClick={() => fileInputRef.current?.click()}
-        className="group flex w-full items-center gap-3.5 rounded-sm border border-dashed border-input bg-background px-3.5 py-3.5 text-left transition-colors hover:border-primary hover:bg-secondary"
+        className="group flex w-full items-center gap-3.5 rounded-[8px] border border-dashed border-input bg-background px-3.5 py-3.5 text-left transition-colors hover:border-primary hover:bg-secondary"
       >
-        <span className="grid size-10 shrink-0 place-items-center bg-secondary text-secondary-foreground transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+        <span className="grid size-10 shrink-0 place-items-center rounded-[6px] bg-secondary text-secondary-foreground transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
           <ImageIcon className="size-5" />
         </span>
         <span>
@@ -638,7 +638,7 @@ export default function AsciiGenerator() {
               onClick={() => handleTextChange(t.art)}
               className={cn("group text-left", isMobile && "shrink-0")}
             >
-              <span className="grid h-12 w-full min-w-16 place-items-center overflow-hidden bg-background ring-1 ring-border transition-shadow group-hover:ring-primary">
+              <span className="grid h-12 w-full min-w-16 place-items-center overflow-hidden rounded-[8px] bg-background ring-1 ring-border transition-shadow group-hover:ring-primary">
                 <pre
                   aria-hidden="true"
                   className="font-mono text-[4px] leading-[1.1] text-foreground"

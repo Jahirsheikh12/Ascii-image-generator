@@ -530,7 +530,7 @@
       "Form green mono for every machine-printed annotation: line and step numbers, counts, readouts, file names.",
       "Wide (125% width) Archivo for headings, bold at 700, with only the page h1 at 800; JetBrains Mono for anything printed.",
       "One landing measure (72rem); thin, unlabelled dashed perforations between sections.",
-      "Square corners on buttons and sheets; near-square hairline corners on small controls.",
+      "Soft 8px corners on every button and button-like control; square sheets and cards; hairline corners on text inputs.",
       "Motion is a stepped carriage advance: output appears row by row, never fades in."
     ],
     "rules": [
@@ -565,7 +565,7 @@
       "Do print machine annotations (line numbers, counts, sizes, captions) in form-green JetBrains Mono with tabular figures.",
       "Do set every landing section on the one 72rem measure, separated by a thin, unlabelled perforated tear line.",
       "Do keep the editor line-number gutter on the same line height as its text.",
-      "Do keep buttons and sheets square (0px), and keep small controls at 3px or less.",
+      "Do give every button and button-like control 8px corners (6px when extra small), and keep sheets and cards square.",
       "Do show real rendered output from the engine on every surface. Never show a picture of ASCII.",
       "Do reveal new output with the stepped, row-by-row print reveal, and drop it under reduced motion.",
       "Do keep both modes: cool paper in light, sage form ink on carbon in dark."

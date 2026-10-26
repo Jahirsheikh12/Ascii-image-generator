@@ -77,6 +77,8 @@ rounded:
   none: "0px"
   hairline: "1.8px"
   control: "3px"
+  button: "8px"
+  button-xs: "6px"
 spacing:
   line: "20px"
   line-loose: "24px"
@@ -91,21 +93,21 @@ components:
   button-primary:
     backgroundColor: "{colors.primary}"
     textColor: "{colors.primary-foreground}"
-    rounded: "{rounded.none}"
+    rounded: "{rounded.button}"
     padding: "0 10px"
     height: "32px"
     typography: "{typography.ui}"
   button-primary-lg:
     backgroundColor: "{colors.primary}"
     textColor: "{colors.primary-foreground}"
-    rounded: "{rounded.none}"
+    rounded: "{rounded.button}"
     padding: "0 16px"
     height: "40px"
     typography: "{typography.label}"
   button-outline:
     backgroundColor: "{colors.paper}"
     textColor: "{colors.ink}"
-    rounded: "{rounded.none}"
+    rounded: "{rounded.button}"
     padding: "0 10px"
     height: "32px"
   button-outline-hover:
@@ -116,7 +118,7 @@ components:
   choice-chip:
     backgroundColor: "{colors.paper}"
     textColor: "{colors.muted-foreground}"
-    rounded: "{rounded.hairline}"
+    rounded: "{rounded.button}"
     height: "32px"
     padding: "0 12px"
   choice-chip-selected:
@@ -152,7 +154,7 @@ The world rejects the neon terminal (green-on-black glow, glowing edges) and the
 - Form green mono for every machine-printed annotation: line and step numbers, counts, readouts, file names.
 - Wide (125% width) Archivo for headings, bold at 700, with only the page h1 at 800; JetBrains Mono for anything printed.
 - One landing measure (72rem); thin, unlabelled dashed perforations between sections.
-- Square corners on buttons and sheets; near-square hairline corners on small controls.
+- Soft 8px corners on every button and button-like control; square corners on sheets and cards; near-square hairline corners on text inputs.
 - Motion is a stepped carriage advance: output appears row by row, never fades in.
 
 ## Colors
@@ -234,21 +236,21 @@ The system is flat and tonal (paper, card, housing). It adds one soft, downward 
 
 ## Shapes
 
-Corners are square. Buttons, sheets, cards, tabs, slider tracks and panels use 0 radius. Small hand controls (choice chips, text and hex inputs, kbd keys, nav link hit areas) take a hairline 1.8px corner. The switch takes 3px, and its thumb and the slider thumb take 2px. Nothing is pill-shaped. Edges are rulings: 1px rings in the border tone, dashed field-edge lines on the editor gutter and drop zones, and the perforation, which is 6px dashes with 4px gaps at 55% form green.
+Buttons are soft: every button and button-like control (the Button component in all sizes, select triggers and their menus, choice chips, colour swatches and pickers, template tiles and the "Convert a photo" card) takes an 8px corner, 6px on the extra-small sizes. Everything else stays square: sheets, cards, tabs, slider tracks and panels use 0 radius. Text and hex inputs, kbd keys and nav link hit areas take a hairline 1.8px corner. The switch takes 3px, and its thumb and the slider thumb take 2px. Nothing is pill-shaped. Edges are rulings: 1px rings in the border tone, dashed field-edge lines on the editor gutter and drop zones, and the perforation, which is 6px dashes with 4px gaps at 55% form green.
 
 ## Components
 
 ### Buttons
-Blunt, form-press buttons: flat fills, square corners, no lift.
-- **Shape:** square (0px).
+Soft form-press buttons: flat fills, 8px corners, no lift.
+- **Shape:** 8px corners (6px on the extra-small sizes).
 - **Pairing:** where two actions sit together, the primary is paired with an outline secondary. On the landing hero, "Choose a photo" is primary and "Open in studio" is outline. On the 404 page, "Open the studio" is primary and "Back to home" is outline.
 - **Primary:** form-press green fill with paper text, 32px tall with 10px padding at 0.75rem medium. The large size is 40px tall with 16px padding at 0.875rem. A trailing arrow icon marks forward navigation.
 - **Hover / Focus:** the fill drops to 88% (80% when pressed). Focus shows a 2px ring-colour outline with a 2px offset.
 - **Outline:** paper fill with a ruling stroke, filling muted on hover. Used for the secondary action and the empty-state actions.
-- **Ghost:** no fill until hover (muted). Used for toolbar icons, the theme toggle (28px square) and Reset style.
+- **Ghost:** no fill until hover (muted). Used for toolbar icons, the theme toggle (28px, 8px corners) and Reset style.
 
 ### Chips
-- **Style:** 32px choice buttons in a row or grid, hairline corners, field-edge stroke on paper, muted ink.
+- **Style:** 32px choice buttons in a row or grid, 8px corners, field-edge stroke on paper, muted ink.
 - **State:** hover turns the stroke primary and the text to ink. Selected is a solid primary fill with paper text and `aria-pressed`.
 
 ### Cards / Containers
@@ -311,7 +313,7 @@ New output is uncovered top to bottom by a clip-path wipe that advances in `step
 - **Do** print machine annotations (line numbers, counts, sizes, captions) in form-green JetBrains Mono with tabular figures.
 - **Do** set every landing section on the one 72rem measure, separated by a thin, unlabelled perforated tear line.
 - **Do** keep the editor line-number gutter on the same line height as its text.
-- **Do** keep buttons and sheets square (0px), and keep small controls at 3px or less.
+- **Do** give every button and button-like control 8px corners (6px when extra small), and keep sheets and cards square (0px).
 - **Do** show real rendered output from the engine on every surface. Never show a picture of ASCII.
 - **Do** reveal new output with the stepped, row-by-row print reveal, and drop it under reduced motion.
 - **Do** keep both modes: cool paper in light, sage form ink on carbon in dark.
