@@ -35,11 +35,11 @@ export const viewport: Viewport = {
 };
 
 const DIRECTION_CONTRACT = `<!--
-THESIS: Fanfold is a line printer for ASCII art. Every surface is a continuous green-bar printout; it refuses the neon terminal and the SaaS hero with three cards.
-OWN-WORLD: Cool paper white with mint bars every three lines, form-green rulings and line numbers, ribbon-black ink, sprocket-hole margins, perforated tear lines. Archivo expanded for headings, JetBrains Mono for output. Square corners, no gradients as decoration, no glow. Dark: the machine room, sage form ink on carbon.
-STORY: The visitor drops a photo, watches it print line by line, tunes columns, then opens the studio to style and export.
-FIRST VIEWPORT: Left, a banner-page FANFOLD set in characters, the h1 and two actions. Right, a live printout sheet with sprocket margins that is the drop target, with columns and charset controls under it.
-FORM: Greenbar Printout (my pick, grounded list 1 of 7), seed ee87715f. Signature: line-by-line print reveal. Motion: stepped carriage advance.
+THESIS: Fanfold is a line printer for ASCII art, shown on clean paper: the print itself is the only texture. It refuses the neon terminal and the SaaS hero with three cards.
+OWN-WORLD: Plain cool paper (carbon in dark), ink type, form-green line numbers and readouts, thin perforated tear lines between sections. Archivo expanded for headings, JetBrains Mono for output. Square corners; no stripes, no gradients as decoration, no glow.
+STORY: The visitor drops a photo, watches it print line by line, then opens the studio to tune, style and export.
+FIRST VIEWPORT: A large left-aligned h1, one line of copy and two actions (choose a photo, open in studio), then a wide clean printout card below that is the drop target. The FANFOLD banner closes the page instead.
+FORM: Greenbar Printout (my pick, grounded list 1 of 7), seed ee87715f; refined 2026-10-26 at user request: stripes and sprocket margins removed. Signature: line-by-line print reveal. Motion: stepped carriage advance.
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
 -->`;
 

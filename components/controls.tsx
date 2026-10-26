@@ -152,7 +152,7 @@ export function Segmented<T extends string | number>({
             aria-pressed={value === o.value}
             onClick={() => onChange(o.value)}
             className={cn(
-              "h-8 truncate rounded-sm border px-1 text-xs font-medium transition-colors pointer-coarse:h-10",
+              "h-8 truncate rounded-[8px] border px-1 text-xs font-medium transition-colors pointer-coarse:h-10",
               value === o.value
                 ? "border-primary bg-primary text-primary-foreground"
                 : "border-input bg-background text-muted-foreground hover:border-primary hover:text-foreground"
@@ -182,7 +182,7 @@ export function ColorRow({
         {label}
       </Label>
       <div className="flex items-center gap-1.5">
-        <label className="relative size-8 shrink-0 cursor-pointer pointer-coarse:size-10 ring-1 ring-border focus-within:ring-2 focus-within:ring-ring">
+        <label className="relative size-8 shrink-0 cursor-pointer overflow-hidden rounded-[8px] pointer-coarse:size-10 ring-1 ring-border focus-within:ring-2 focus-within:ring-ring">
           <span className="sr-only">Pick {label.toLowerCase()}</span>
           <input
             type="color"
@@ -215,12 +215,14 @@ export function ColorRow({
 export function PresetSwatches({
   isActive,
   onPick,
+  className,
 }: {
   isActive: (t: ColorTheme) => boolean
   onPick: (t: ColorTheme) => void
+  className?: string
 }) {
   return (
-    <div className="grid grid-cols-5 gap-1.5">
+    <div className={cn("grid grid-cols-5 gap-1.5", className)}>
       {COLOR_THEMES.map((t) => (
         <button
           key={t.name}
@@ -233,7 +235,7 @@ export function PresetSwatches({
         >
           <span
             className={cn(
-              "grid h-9 place-items-center font-mono text-xs font-bold ring-1 ring-border transition-shadow group-hover:ring-2 group-hover:ring-ring",
+              "grid h-9 place-items-center rounded-[8px] font-mono text-xs font-bold ring-1 ring-border transition-shadow group-hover:ring-2 group-hover:ring-ring",
               isActive(t) && "ring-2 ring-primary"
             )}
             style={{
