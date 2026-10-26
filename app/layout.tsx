@@ -37,8 +37,8 @@ export const viewport: Viewport = {
 const DIRECTION_CONTRACT = `<!--
 THESIS: Fanfold is a line printer for ASCII art, shown on clean paper: the print itself is the only texture. It refuses the neon terminal and the SaaS hero with three cards.
 OWN-WORLD: Plain cool paper (carbon in dark), ink type, form-green line numbers and readouts, thin perforated tear lines between sections. Archivo expanded for headings, JetBrains Mono for output. Square corners; no stripes, no gradients as decoration, no glow.
-STORY: The visitor drops a photo, watches it print line by line, tunes columns, then opens the studio to style and export.
-FIRST VIEWPORT: A full-width banner-page FANFOLD in muted form ink, then the h1 and two actions on the left and a clean printout card with line numbers on the right that is the drop target, with columns and charset controls under it.
+STORY: The visitor drops a photo, watches it print line by line, then opens the studio to tune, style and export.
+FIRST VIEWPORT: A large left-aligned h1, one line of copy and two actions (choose a photo, open in studio), then a wide clean printout card below that is the drop target. The FANFOLD banner closes the page instead.
 FORM: Greenbar Printout (my pick, grounded list 1 of 7), seed ee87715f; refined 2026-10-26 at user request: stripes and sprocket margins removed. Signature: line-by-line print reveal. Motion: stepped carriage advance.
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
 -->`;

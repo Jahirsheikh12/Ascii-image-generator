@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-26T08:15:54.406488+00:00",
+  "generatedAt": "2026-10-26T08:34:51.024734+00:00",
   "title": "Design System: Fanfold",
   "extensions": {
     "colorMeta": {
@@ -338,19 +338,19 @@
     "typographyMeta": {
       "display": {
         "displayName": "Display",
-        "purpose": "The landing h1 only (800)."
+        "purpose": "The landing h1 only (800, max 13ch, left-aligned)."
       },
       "headline": {
         "displayName": "Headline",
-        "purpose": "Landing section headings at 700; the 404 h1 at this size is 800; closing CTA steps to clamp(2.2rem,5vw,4.5rem)."
+        "purpose": "Landing section headings at 700; the 404 h1 at a near-identical size is 800; the closing heading uses clamp(2.25rem,5vw,4rem)."
       },
       "title": {
         "displayName": "Title",
-        "purpose": "Report row titles, panel headings, drop overlay, empty state (700)."
+        "purpose": "Step titles, format names, drop overlay, empty state (700)."
       },
       "body": {
         "displayName": "Lead Body",
-        "purpose": "Lead paragraphs in muted ink."
+        "purpose": "Lead paragraphs in muted ink, 40 to 46ch; hero lead 1.25rem from sm."
       },
       "label": {
         "displayName": "Label",
@@ -362,17 +362,17 @@
       },
       "printout": {
         "displayName": "Printout",
-        "purpose": "All ASCII output and the editor; size computed from columns."
+        "purpose": "All ASCII output; hero size from column count, capped at 16px; studio editor on a 20px rhythm."
       },
       "readout": {
         "displayName": "Readout",
-        "purpose": "Form-green values, counts, page labels."
+        "purpose": "Form-green values, zoom, step numbers, file names."
       }
     },
     "shadows": [
       {
         "name": "sheet-lift",
-        "value": "0 1px 0 var(--border), 0 24px 48px -28px var(--shadow)",
+        "value": "0 1px 0 var(--border), 0 32px 64px -40px var(--shadow)",
         "purpose": "Hero printout card."
       },
       {
@@ -391,21 +391,16 @@
         "purpose": "Blank 'Nothing to print yet' sheet on the studio stage."
       },
       {
-        "name": "header-rule",
-        "value": "0 1px 0 var(--border)",
-        "purpose": "1px rule under the landing and 404 headers; not depth."
+        "name": "header-footer-rule",
+        "value": "0 1px 0 var(--border) / 0 -1px 0 var(--border)",
+        "purpose": "1px rules under the landing and 404 headers and above the landing footer; not depth."
       }
     ],
     "motion": [
       {
         "name": "print-feed",
-        "value": "clip-path inset(0 0 100% 0) to inset(0); steps(var(--print-rows), end); hero min(1.8s, rows * 0.045s)",
-        "purpose": "Signature row-by-row print reveal; replays on hero source/charset/invert/theme change; disabled under reduced motion."
-      },
-      {
-        "name": "print-on-view",
-        "value": "IntersectionObserver threshold 0.25; min(1.6s, rows * 0.06s)",
-        "purpose": "Landing prints below the fold run print-feed once on scroll into view; prints on screen at load stay printed; off under reduced motion."
+        "value": "clip-path inset(0 0 100% 0) to inset(0); steps(var(--print-rows), end); min(1.8s, rows * 0.06s)",
+        "purpose": "Signature row-by-row print reveal on the hero printout; replays on source or theme change; disabled under reduced motion."
       },
       {
         "name": "state-transition",
@@ -427,7 +422,11 @@
         "value": "1024px"
       },
       {
-        "name": "sheet-max",
+        "name": "landing-measure",
+        "value": "72rem"
+      },
+      {
+        "name": "404-max",
         "value": "1360px"
       }
     ]
@@ -490,7 +489,7 @@
     {
       "name": "Preset Swatches",
       "kind": "chip",
-      "description": "Colour presets shown as their own ink '#@' on their own paper; gradient presets get a stripe.",
+      "description": "Colour presets shown as their own ink '#@' on their own paper; gradient presets get a stripe. Studio grid is 5 columns; landing is 4 on phones, 6 from sm, 4 again from lg so names fit.",
       "html": "<div class=\"ds-presets\"><button class=\"ds-preset\" aria-pressed=\"true\"><span style=\"background:#f6f9f4;color:#1f2620\">#@</span>Fanfold</button><button class=\"ds-preset\" aria-pressed=\"false\"><span style=\"background:#0f172a;color:#e2e8f0\">#@</span>Classic</button></div>",
       "css": ".ds-presets{display:grid;grid-template-columns:repeat(5,56px);gap:6px}.ds-preset{padding:0;border:0;background:none;text-align:left;font-family:var(--font-archivo),sans-serif;font-size:11px;color:var(--muted-foreground);cursor:pointer}.ds-preset span{display:grid;place-items:center;height:36px;margin-bottom:4px;font-family:var(--font-mono),monospace;font-size:12px;font-weight:700;box-shadow:0 0 0 1px var(--border)}.ds-preset:hover{color:var(--foreground)}.ds-preset:hover span{box-shadow:0 0 0 2px var(--ring)}.ds-preset[aria-pressed=true] span{box-shadow:0 0 0 2px var(--primary)}.ds-preset:focus-visible{outline:2px solid var(--ring);outline-offset:2px}"
     },
@@ -498,15 +497,15 @@
       "name": "Landing Header",
       "kind": "nav",
       "description": "Sticky header: wordmark, text links, theme toggle, primary action, 1px rule.",
-      "html": "<header class=\"ds-nav\"><span class=\"ds-mark\">Fanfold</span><nav><a href=\"#\">How it works</a><a href=\"#\">Effects</a><a href=\"#\">Export</a><button class=\"ds-nav-cta\">Open studio</button></nav></header>",
+      "html": "<header class=\"ds-nav\"><span class=\"ds-mark\">Fanfold</span><nav><a href=\"#\">How it works</a><a href=\"#\">Finishes</a><a href=\"#\">Export</a><button class=\"ds-nav-cta\">Open studio</button></nav></header>",
       "css": ".ds-nav{display:flex;align-items:center;justify-content:space-between;height:64px;padding:0 32px;background:var(--background);position:sticky;top:0;box-shadow:0 1px 0 var(--border);font-family:var(--font-archivo),sans-serif}.ds-mark{font-stretch:125%;font-weight:800;font-size:15px;letter-spacing:-0.02em;color:var(--foreground)}.ds-nav nav{display:flex;align-items:center;gap:8px}.ds-nav a{padding:4px 8px;border-radius:1.8px;font-size:14px;color:var(--muted-foreground);text-decoration:none}.ds-nav a:hover{color:var(--foreground)}.ds-nav a:focus-visible{outline:2px solid var(--ring);outline-offset:2px}.ds-nav-cta{height:32px;padding:0 10px;margin-left:4px;background:var(--primary);color:var(--primary-foreground);border:0;border-radius:0;font-size:14px;font-weight:500;cursor:pointer}.ds-nav-cta:hover{background:color-mix(in oklch,var(--primary) 88%,transparent)}"
     },
     {
       "name": "Printout Sheet",
       "kind": "custom",
-      "description": "Signature: square card-stock sheet, 1px ring, soft lift, form-green line gutter, mono output, stepped print reveal.",
-      "html": "<figure class=\"ds-sheet-wrap\"><figcaption class=\"ds-cap\"><span>planet.png (sample)</span><span>76 × 5 · Standard</span></figcaption><div class=\"ds-sheet\" tabindex=\"0\"><div class=\"ds-print\"><pre class=\"ds-nums\">1\n2\n3\n4\n5</pre><pre class=\"ds-out\">      .:-=+*#%@@%#*+=-:.\n   .-+#@@@@@@@@@@@@@@#+-.\n  :*@@@@@@@@@@@@@@@@@@@@*:\n   .-+#@@@@@@@@@@@@@@#+-.\n      .:-=+*#%@@%#*+=-:.</pre></div></div></figure>",
-      "css": ".ds-sheet-wrap{margin:0;width:420px}.ds-cap{display:flex;justify-content:space-between;margin-bottom:10px;font-family:var(--font-mono),monospace;font-size:12px;color:var(--form);font-variant-numeric:tabular-nums}.ds-sheet{background:var(--card);border-radius:0;box-shadow:0 0 0 1px var(--border),0 24px 48px -28px var(--shadow);cursor:pointer;transition:box-shadow .15s}.ds-sheet:hover{box-shadow:0 0 0 1px color-mix(in oklch,var(--primary) 40%,transparent),0 24px 48px -28px var(--shadow)}.ds-sheet:focus-visible{outline:2px solid var(--ring);outline-offset:2px}.ds-print{display:flex;padding:1.6em 1.2em;font-family:var(--font-mono),monospace;font-size:12px;line-height:1.2;animation:ds-feed .5s steps(5,end) both}.ds-nums{margin:0 .6em 0 0;width:2.4em;text-align:right;color:color-mix(in oklch,var(--form) 75%,transparent);font-variant-numeric:tabular-nums}.ds-out{margin:0;color:var(--foreground)}@keyframes ds-feed{from{clip-path:inset(0 0 100% 0)}to{clip-path:inset(0)}}@media (prefers-reduced-motion:reduce){.ds-print{animation:none}}"
+      "description": "Signature hero drop target: square card-stock card, 1px ring, soft lift, centred mono print capped at 16px, stepped print reveal, footer row with file name and hint.",
+      "html": "<figure class=\"ds-sheet\" tabindex=\"0\" role=\"button\" aria-label=\"Choose a photo to print\"><div class=\"ds-print\"><pre>      .:-=+*#%@@%#*+=-:.\n   .-+#@@@@@@@@@@@@@@#+-.\n  :*@@@@@@@@@@@@@@@@@@@@*:\n   .-+#@@@@@@@@@@@@@@#+-.\n      .:-=+*#%@@%#*+=-:.</pre></div><figcaption class=\"ds-foot\"><span class=\"ds-file\">planet.png (sample)</span><span>Drop, paste or click to print your own</span></figcaption></figure>",
+      "css": ".ds-sheet{margin:0;width:520px;--pad:48px;background:var(--card);border-radius:0;box-shadow:0 0 0 1px var(--border),0 32px 64px -40px var(--shadow);cursor:pointer;transition:box-shadow .15s}.ds-sheet:hover{box-shadow:0 0 0 1px color-mix(in oklch,var(--primary) 40%,transparent),0 32px 64px -40px var(--shadow)}.ds-sheet:focus-visible{outline:2px solid var(--ring);outline-offset:2px}.ds-print{display:grid;place-items:center;padding:calc(var(--pad)*1.25) var(--pad)}.ds-print pre{margin:0;font-family:var(--font-mono),monospace;font-size:14px;line-height:1.2;color:var(--foreground);animation:ds-feed .3s steps(5,end) both}.ds-foot{display:flex;justify-content:space-between;gap:16px;padding:14px var(--pad);border-top:1px solid color-mix(in oklch,var(--border) 70%,transparent);font-family:var(--font-archivo),sans-serif;font-size:14px;color:var(--muted-foreground)}.ds-file{font-family:var(--font-mono),monospace;font-size:12px;color:var(--form)}@keyframes ds-feed{from{clip-path:inset(0 0 100% 0)}to{clip-path:inset(0)}}@media (prefers-reduced-motion:reduce){.ds-print pre{animation:none}}"
     },
     {
       "name": "Tear Line",
@@ -514,23 +513,30 @@
       "description": "Thin unlabelled perforation between landing sections.",
       "html": "<div class=\"ds-tear\"></div>",
       "css": ".ds-tear{width:480px;height:1px;background-image:repeating-linear-gradient(to right,color-mix(in oklch,var(--form) 55%,transparent) 0 6px,transparent 6px 10px)}"
+    },
+    {
+      "name": "Step List",
+      "kind": "custom",
+      "description": "Ordered three-step list: 1px ink rule, form-green mono number, title, one sentence.",
+      "html": "<ol class=\"ds-steps\"><li><span>01</span><h3>Drop</h3><p>Drop, paste or pick a photo.</p></li><li><span>02</span><h3>Style</h3><p>Choose a font and colors.</p></li><li><span>03</span><h3>Export</h3><p>Download a PNG, JPEG, WebP or SVG.</p></li></ol>",
+      "css": ".ds-steps{display:grid;grid-template-columns:repeat(3,180px);gap:32px;margin:0;padding:0;list-style:none;font-family:var(--font-archivo),sans-serif}.ds-steps li{border-top:1px solid color-mix(in oklch,var(--foreground) 80%,transparent);padding-top:24px}.ds-steps span{font-family:var(--font-mono),monospace;font-size:12px;color:var(--form);font-variant-numeric:tabular-nums}.ds-steps h3{margin:12px 0 0;font-stretch:125%;font-weight:700;font-size:20px;letter-spacing:-0.02em;color:var(--foreground)}.ds-steps p{margin:8px 0 0;line-height:1.625;color:var(--muted-foreground)}"
     }
   ],
   "narrative": {
     "northStar": "The Clean Printout",
-    "overview": "Fanfold is a line printer for ASCII art, shown on clean paper. The printed output is the only texture in the system. Surfaces are plain cool paper in light mode and carbon in dark. The printer's character lives in four places: the wide, form-printed headings; form-green line numbers and readouts; the stepped row-by-row print reveal; and thin perforated tear lines between landing sections. Ink is a near-black foreground with a green cast. Form furniture (line numbers, counts, sizes, captions) is printed in form green, the colour of a pre-printed form.\n\nThe look is quiet and premium: generous section spacing, one heavy anchor per page, hairline rulings, and a single soft shadow under the sheets that hold a print. The studio is an operator console on the same paper. The text editor carries a line-number gutter on a 20px rhythm, the preview sits in a slightly darker printer housing, and settings sit on card stock. Dark mode is the machine room after hours: sage form ink on carbon.\n\nThe world rejects the neon terminal (green-on-black glow, glowing edges) and the generic SaaS page (purple gradients, glass cards, a centred hero over three feature boxes). It also no longer uses decorative paper texture: no green-bar stripes, no sprocket margins, no desk border, no page counters.",
+    "overview": "Fanfold is a line printer for ASCII art, shown on clean paper. The printed output is the only texture in the system. Surfaces are plain cool paper in light mode and carbon in dark. The printer's character lives in four places: the wide, form-printed headings; form-green mono annotations (the studio's line numbers and readouts, the landing's step numbers and file name); the stepped row-by-row print reveal; and thin perforated tear lines between landing sections. Ink is a near-black foreground with a green cast. Form furniture (line numbers, step numbers, counts, sizes, file names) is printed in form green, the colour of a pre-printed form.\n\nThe look is quiet and premium. The landing page is distilled to a few sections on one measure, with generous spacing, one heavy anchor, hairline rulings, and a single soft shadow under the sheets that hold a print. Each landing section makes one point; full control lives in the studio. The studio is an operator console on the same paper. The text editor carries a line-number gutter on a 20px rhythm, the preview sits in a slightly darker printer housing, and settings sit on card stock. Dark mode is the machine room after hours: sage form ink on carbon.\n\nThe world rejects the neon terminal (green-on-black glow, glowing edges) and the generic SaaS page (purple gradients, glass cards, a centred hero over three feature boxes). It also no longer uses decorative paper texture: no green-bar stripes, no sprocket margins, no desk border, no page counters.",
     "keyCharacteristics": [
       "Plain paper surfaces; the print is the only texture.",
-      "Form green for every machine-printed annotation: line numbers, counts, readouts, captions.",
+      "Form green mono for every machine-printed annotation: line and step numbers, counts, readouts, file names.",
       "Wide (125% width) Archivo for headings, bold at 700, with only the page h1 at 800; JetBrains Mono for anything printed.",
-      "Thin dashed perforations between landing sections, with no labels.",
+      "One landing measure (72rem); thin, unlabelled dashed perforations between sections.",
       "Square corners on buttons and sheets; near-square hairline corners on small controls.",
       "Motion is a stepped carriage advance: output appears row by row, never fades in."
     ],
     "rules": [
       {
         "name": "The Form Ink Rule",
-        "body": "Anything a machine would print onto the form (line numbers, counts, dimensions, captions, the banner) is form green in mono with tabular figures. Content the user made is foreground ink. Never swap them.",
+        "body": "Anything a machine would print onto the form (line and step numbers, counts, dimensions, file names, the banner) is form green in mono with tabular figures. Content the user made is foreground ink. Never swap them.",
         "section": "colors"
       },
       {
@@ -545,7 +551,7 @@
       },
       {
         "name": "The Line Grid Rule",
-        "body": "Printed output sits at 1.2 line height. A line-number gutter shares its text's exact line height (1.2em on the hero, 20px in the editor) so numbers and rows stay in phase.",
+        "body": "Printed output sits at 1.2 line height. The studio editor's line-number gutter shares its text's exact 20px line height, so numbers and rows stay in phase.",
         "section": "typography"
       },
       {
@@ -557,8 +563,8 @@
     "dos": [
       "Do keep surfaces plain paper, card or housing, and let the printed ASCII be the texture.",
       "Do print machine annotations (line numbers, counts, sizes, captions) in form-green JetBrains Mono with tabular figures.",
-      "Do separate landing sections with a thin, unlabelled perforated tear line.",
-      "Do keep a line-number gutter on the same line height as its text.",
+      "Do set every landing section on the one 72rem measure, separated by a thin, unlabelled perforated tear line.",
+      "Do keep the editor line-number gutter on the same line height as its text.",
       "Do keep buttons and sheets square (0px), and keep small controls at 3px or less.",
       "Do show real rendered output from the engine on every surface. Never show a picture of ASCII.",
       "Do reveal new output with the stepped, row-by-row print reveal, and drop it under reduced motion.",

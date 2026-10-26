@@ -215,12 +215,14 @@ export function ColorRow({
 export function PresetSwatches({
   isActive,
   onPick,
+  className,
 }: {
   isActive: (t: ColorTheme) => boolean
   onPick: (t: ColorTheme) => void
+  className?: string
 }) {
   return (
-    <div className="grid grid-cols-5 gap-1.5">
+    <div className={cn("grid grid-cols-5 gap-1.5", className)}>
       {COLOR_THEMES.map((t) => (
         <button
           key={t.name}

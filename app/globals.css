@@ -42,7 +42,6 @@
   --color-bar: var(--bar);
   --color-form: var(--form);
   --color-housing: var(--housing);
-  --color-desk: var(--desk);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -75,7 +74,6 @@
   --bar: oklch(0.94 0.04 150);
   --form: oklch(0.48 0.09 152);
   --housing: oklch(0.925 0.01 150);
-  --desk: oklch(0.875 0.012 150);
   --shadow: oklch(0.25 0.03 150 / 0.32);
   --chart-1: oklch(0.45 0.09 152);
   --chart-2: oklch(0.6 0.1 152);
@@ -116,7 +114,6 @@
   --bar: oklch(0.235 0.026 152);
   --form: oklch(0.74 0.08 152);
   --housing: oklch(0.16 0.01 155);
-  --desk: oklch(0.135 0.008 155);
   --shadow: oklch(0 0 0 / 0.55);
   --chart-1: oklch(0.8 0.1 152);
   --chart-2: oklch(0.65 0.08 152);

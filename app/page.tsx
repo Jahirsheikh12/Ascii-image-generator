@@ -1,95 +1,70 @@
 import Link from "next/link"
-import { ArrowRightIcon } from "@phosphor-icons/react/dist/ssr"
+import { ArrowRightIcon, ShieldCheckIcon } from "@phosphor-icons/react/dist/ssr"
 
 import { Button } from "@/components/ui/button"
 import { Wordmark } from "@/components/wordmark"
 import { ThemeToggle } from "@/components/theme-toggle"
-import {
-  HeroPrinter,
-  PhotoPrint,
-  FinishPicker,
-  PrintOnView,
-} from "@/components/landing-demo"
-import { ASCII_TEMPLATES } from "@/lib/ascii-data"
+import { FinishPicker, HeroPrinter } from "@/components/landing-demo"
+import { banner } from "@/lib/banner"
 
-const TYPED = `+----------------------------+
-|  build passing   v2.4.1    |
-|  ~/fanfold  $ npm run ship |
-+----------------------------+`
+// One measure for every section, so everything shares a left edge
+const WRAP = "mx-auto w-full max-w-6xl px-5 sm:px-8"
 
-const STUDIO_GROUPS = [
-  ["Font", "8 monospace families, 8–72 px, line height, letter spacing"],
-  ["Colors", "11 presets, custom ink and paper, gradient ink, transparent background"],
-  ["Canvas", "Padding up to 128 px, 1× to 4× pixel density"],
-  ["Effects", "Glow, scan lines, CRT curve, noise, text shadow"],
-  ["Border & frame", "Solid, dashed or double borders; terminal, code editor, polaroid and vintage frames"],
-  ["Photo", "Six character sets, brightness, contrast, color, dithering, invert"],
+const STEPS = [
+  ["Drop", "Drop, paste or pick a photo. Or type, or start from one of eight templates."],
+  ["Style", "Choose a font and colors, then add a frame, glow, scan lines or a CRT curve."],
+  ["Export", "Download a PNG, JPEG, WebP or SVG, or copy a link that carries the whole piece."],
 ] as const
 
-const SHORTCUTS = [
-  ["Command menu", "⌘ K"],
-  ["Undo", "⌘ Z"],
-  ["Redo", "⇧ ⌘ Z"],
-  ["Export", "⌘ S"],
+const FORMATS = [
+  ["PNG", "Lossless"],
+  ["JPEG", "Quality 10–100%"],
+  ["WebP", "Small files"],
+  ["SVG", "Scales to any size"],
 ] as const
 
-const OUTPUTS = [
-  ["PNG", "Lossless, with an optional transparent background"],
-  ["JPEG", "Quality from 10 to 100%"],
-  ["WebP", "Small files for the web"],
-  ["SVG", "Real text that scales to any size"],
-  ["Clipboard", "Copy the image or the raw characters"],
-  ["Share link", "The whole piece travels inside the URL"],
+const NAV = [
+  ["How it works", "#how"],
+  ["Finishes", "#finishes"],
+  ["Export", "#export"],
 ] as const
 
 /** Thin perforated fold between sections. */
 function Tear() {
-  return <div aria-hidden="true" className="perforation h-px" />
+  return (
+    <div className={WRAP}>
+      <div aria-hidden="true" className="perforation h-px" />
+    </div>
+  )
 }
 
-function Leaders({ rows }: { rows: readonly (readonly [string, string])[] }) {
+function SectionTitle({ id, children }: { id: string; children: React.ReactNode }) {
   return (
-    <dl className="divide-y divide-border/70 border-y border-border/70">
-      {rows.map(([term, desc]) => (
-        <div
-          key={term}
-          className="grid gap-1 py-3.5 sm:grid-cols-[11rem_minmax(0,1fr)] sm:gap-6"
-        >
-          <dt className="font-medium">{term}</dt>
-          <dd className="text-muted-foreground">{desc}</dd>
-        </div>
-      ))}
-    </dl>
+    <h2
+      id={id}
+      className="font-display text-[clamp(2rem,3.6vw,3rem)] leading-[1.02]"
+    >
+      {children}
+    </h2>
   )
 }
 
 export default function Home() {
-  const rocket = ASCII_TEMPLATES.find((t) => t.name === "Rocket")!.art
-
   return (
     <div className="min-h-dvh bg-background">
       <header className="sticky top-0 z-40 bg-background shadow-[0_1px_0_var(--border)]">
-        <div className="mx-auto flex h-16 max-w-[1360px] items-center justify-between gap-4 px-5 sm:px-8 lg:px-12">
+        <div className={`${WRAP} flex h-16 items-center justify-between gap-4`}>
           <Wordmark />
           <nav aria-label="Main" className="flex items-center gap-1 sm:gap-2">
-            <a
-              href="#start"
-              className="hidden rounded-sm px-2 py-1 text-sm text-muted-foreground hover:text-foreground md:block"
-            >
-              How it works
-            </a>
-            <a
-              href="#treatments"
-              className="hidden rounded-sm px-2 py-1 text-sm text-muted-foreground hover:text-foreground md:block"
-            >
-              Effects
-            </a>
-            <a
-              href="#output"
-              className="hidden rounded-sm px-2 py-1 text-sm text-muted-foreground hover:text-foreground md:block"
-            >
-              Export
-            </a>
+            {NAV.map(([label, href]) => (
+              <a
+                key={href}
+                href={href}
+                className="hidden rounded-sm px-2 py-1 text-sm text-muted-foreground transition-colors hover:text-foreground md:block"
+              >
+                {label}
+              </a>
+            ))}
             <ThemeToggle />
             <Button
               nativeButton={false}
@@ -102,214 +77,128 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="mx-auto min-w-0 max-w-[1360px]">
-        <main>
+      <main>
+        <div className={WRAP}>
           <HeroPrinter />
-          <Tear />
-
-          {/* Three ways in, printed as a job report */}
-          <section
-            id="start"
-            aria-labelledby="start-title"
-            className="scroll-mt-20 px-5 py-16 sm:px-8 lg:px-12 lg:py-24"
-          >
-            <div className="max-w-2xl">
-              <h2
-                id="start-title"
-                className="font-display text-[clamp(1.9rem,3.4vw,3rem)] leading-[1.02]"
-              >
-                Three ways to start a print.
-              </h2>
-              <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
-                Whatever goes in, the studio treats it as characters you can
-                edit, restyle and export.
-              </p>
-            </div>
-
-            <div className="mt-12 border-t border-foreground/80">
-              {[
-                {
-                  title: "Type it",
-                  body: "Type or paste anything: box drawings, banners, signatures, logs. Undo and redo keep up with you.",
-                  art: (
-                    <PrintOnView rows={TYPED.split("\n").length}>
-                      <pre className="m-0 font-mono text-[13px] leading-[24px]">
-                        {TYPED}
-                      </pre>
-                    </PrintOnView>
-                  ),
-                },
-                {
-                  title: "Start from a template",
-                  body: `Eight ready pieces: ${ASCII_TEMPLATES.map((t) => t.name.toLowerCase()).join(", ")}.`,
-                  art: (
-                    <PrintOnView rows={rocket.split("\n").length}>
-                      <pre className="m-0 font-mono text-[13px] leading-[24px]">
-                        {rocket}
-                      </pre>
-                    </PrintOnView>
-                  ),
-                },
-                {
-                  title: "Drop a photo",
-                  body: "Drop, paste or pick an image. Choose the columns and character set, then brightness, contrast, color and dithering.",
-                  art: (
-                    <PrintOnView rows={17}>
-                      <PhotoPrint />
-                    </PrintOnView>
-                  ),
-                },
-              ].map((row) => (
-                <article
-                  key={row.title}
-                  className="grid gap-6 border-b border-border py-10 md:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] md:gap-12"
-                >
-                  <div className="max-w-md">
-                    <h3 className="font-display text-xl">{row.title}</h3>
-                    <p className="mt-3 leading-relaxed text-muted-foreground">
-                      {row.body}
-                    </p>
-                  </div>
-                  <div className="overflow-x-auto">{row.art}</div>
-                </article>
-              ))}
-            </div>
-          </section>
-          <Tear />
-
-          {/* Treatments */}
-          <section
-            id="treatments"
-            aria-labelledby="treatments-title"
-            className="scroll-mt-20 px-5 py-16 sm:px-8 lg:px-12 lg:py-24"
-          >
-            <div className="grid gap-6 lg:grid-cols-12">
-              <h2
-                id="treatments-title"
-                className="font-display text-[clamp(1.9rem,3.4vw,3rem)] leading-[1.02] lg:col-span-6"
-              >
-                Try a finish.
-              </h2>
-              <p className="text-lg leading-relaxed text-muted-foreground lg:col-span-5 lg:col-start-8 lg:self-end">
-                This is the export engine running live. Pick a color preset,
-                effects and a frame; the studio has all of these and more.
-              </p>
-            </div>
-            <div className="mt-12">
-              <FinishPicker />
-            </div>
-          </section>
-          <Tear />
-
-          {/* The studio */}
-          <section
-            aria-labelledby="studio-title"
-            className="px-5 py-16 sm:px-8 lg:px-12 lg:py-24"
-          >
-            <div className="grid gap-12 lg:grid-cols-12">
-              <div className="lg:col-span-4">
-                <h2
-                  id="studio-title"
-                  className="font-display text-[clamp(1.9rem,3.4vw,3rem)] leading-[1.02]"
-                >
-                  Every control on one screen.
-                </h2>
-                <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
-                  Text on the left, the print in the middle, settings
-                  alongside. The preview redraws as you type.
-                </p>
-                <div className="mt-10">
-                  <h3 className="text-sm font-medium">Keyboard</h3>
-                  <ul className="mt-3 space-y-2">
-                    {SHORTCUTS.map(([label, keys]) => (
-                      <li
-                        key={label}
-                        className="flex items-center justify-between gap-4 text-sm"
-                      >
-                        <span className="text-muted-foreground">{label}</span>
-                        <kbd className="rounded-sm border border-input bg-background px-1.5 py-0.5 font-mono text-xs">
-                          {keys}
-                        </kbd>
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="mt-3 text-xs text-muted-foreground">
-                    Use Ctrl instead of ⌘ on Windows and Linux.
-                  </p>
-                </div>
-              </div>
-              <div className="lg:col-span-7 lg:col-start-6">
-                <Leaders rows={STUDIO_GROUPS} />
-              </div>
-            </div>
-          </section>
-          <Tear />
-
-          {/* Output and privacy */}
-          <section
-            id="output"
-            aria-labelledby="output-title"
-            className="scroll-mt-20 px-5 py-16 sm:px-8 lg:px-12 lg:py-24"
-          >
-            <div className="grid gap-12 lg:grid-cols-12 lg:items-end">
-              <div className="lg:col-span-7">
-                <h2
-                  id="output-title"
-                  className="font-display text-[clamp(1.9rem,3.4vw,3rem)] leading-[1.02]"
-                >
-                  Take it anywhere.
-                </h2>
-                <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted-foreground">
-                  Export at 1×, 2×, 3× or 4× pixel density, sharp enough for a
-                  README banner or a poster.
-                </p>
-                <div className="mt-10">
-                  <Leaders rows={OUTPUTS} />
-                </div>
-              </div>
-              <aside className="bg-primary p-8 text-primary-foreground sm:p-10 lg:col-span-4 lg:col-start-9">
-                <h3 className="font-display text-2xl leading-tight">
-                  Your photos never leave this tab.
-                </h3>
-                <p className="mt-4 leading-relaxed opacity-90">
-                  Conversion runs on your device with the browser&apos;s
-                  canvas. Nothing is uploaded. A share link carries the art
-                  itself in the part of the URL that is never sent to a
-                  server.
-                </p>
-              </aside>
-            </div>
-          </section>
-          <Tear />
-
-          {/* Close */}
-          <section className="px-5 py-20 text-center sm:px-8 lg:px-12 lg:py-24">
-            <h2 className="font-display mx-auto max-w-3xl text-[clamp(2.2rem,5vw,4.5rem)] leading-[0.98]">
-              Feed it a photo.
-            </h2>
-            <p className="mx-auto mt-5 max-w-md text-lg text-muted-foreground">
-              Open the studio and drop in your own.
-            </p>
-            <Button
-              size="lg"
-              nativeButton={false}
-              render={<Link href="/studio" />}
-              className="mt-9"
-            >
-              Open the studio
-              <ArrowRightIcon className="size-4" />
-            </Button>
-          </section>
-        </main>
-
+        </div>
         <Tear />
-        <footer className="flex flex-col gap-4 bg-background px-5 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-12">
+
+        <section
+          id="how"
+          aria-labelledby="how-title"
+          className={`${WRAP} scroll-mt-20 py-20 lg:py-28`}
+        >
+          <SectionTitle id="how-title">From photo to print in three steps.</SectionTitle>
+          <ol className="mt-14 grid gap-10 sm:grid-cols-3 sm:gap-8 lg:gap-12">
+            {STEPS.map(([title, body], i) => (
+              <li key={title} className="border-t border-foreground/80 pt-6">
+                <span className="font-mono text-xs text-form tabular">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <h3 className="mt-3 font-display text-xl">{title}</h3>
+                <p className="mt-2 max-w-[34ch] leading-relaxed text-muted-foreground">
+                  {body}
+                </p>
+              </li>
+            ))}
+          </ol>
+        </section>
+        <Tear />
+
+        <section
+          id="finishes"
+          aria-labelledby="finishes-title"
+          className={`${WRAP} scroll-mt-20 py-20 lg:py-28`}
+        >
+          <FinishPicker>
+            <SectionTitle id="finishes-title">Try a finish.</SectionTitle>
+            <p className="mt-5 max-w-[40ch] text-lg leading-relaxed text-muted-foreground">
+              The same print, drawn live by the engine that writes your
+              export. Pick a preset; the studio has the rest.
+            </p>
+          </FinishPicker>
+        </section>
+        <Tear />
+
+        <section
+          id="export"
+          aria-labelledby="export-title"
+          className={`${WRAP} scroll-mt-20 py-20 lg:py-28`}
+        >
+          <div className="grid gap-12 lg:grid-cols-12 lg:gap-16">
+            <div className="lg:col-span-5">
+              <SectionTitle id="export-title">Take it anywhere.</SectionTitle>
+              <p className="mt-5 max-w-[40ch] text-lg leading-relaxed text-muted-foreground">
+                Export at 1× to 4× pixel density, copy the image or the
+                text, or share a link that carries the whole piece.
+              </p>
+            </div>
+            <div className="lg:col-span-7">
+              <ul className="grid grid-cols-2 border-t border-foreground/80 sm:grid-cols-4">
+                {FORMATS.map(([name, note]) => (
+                  <li key={name} className="border-b border-border/70 py-6 pr-4">
+                    <p className="font-display text-2xl">{name}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{note}</p>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-8 flex gap-3 leading-relaxed text-muted-foreground">
+                <ShieldCheckIcon
+                  aria-hidden="true"
+                  className="mt-0.5 size-5 shrink-0 text-form"
+                />
+                <span>
+                  <span className="font-medium text-foreground">
+                    Your photos never leave this tab.
+                  </span>{" "}
+                  Conversion runs on your device, and a share link keeps the
+                  art in the part of the URL that is never sent to a server.
+                </span>
+              </p>
+            </div>
+          </div>
+        </section>
+        <Tear />
+
+        <section aria-labelledby="close-title" className={`${WRAP} py-20 lg:py-28`}>
+          <div className="@container hidden max-w-3xl sm:block">
+            <pre
+              aria-hidden="true"
+              className="font-mono leading-[1.05] font-bold text-form/60 select-none"
+              style={{ fontSize: "min(calc(100cqi / 28.6), 22px)" }}
+            >
+              {banner("FANFOLD")}
+            </pre>
+          </div>
+          <h2
+            id="close-title"
+            className="font-display text-[clamp(2.25rem,5vw,4rem)] leading-[0.98] sm:mt-10"
+          >
+            Feed it a photo.
+          </h2>
+          <Button
+            size="lg"
+            nativeButton={false}
+            render={<Link href="/studio" />}
+            className="mt-8"
+          >
+            Open the studio
+            <ArrowRightIcon className="size-4" />
+          </Button>
+        </section>
+      </main>
+
+      <footer className="shadow-[0_-1px_0_var(--border)]">
+        <div className={`${WRAP} flex items-center justify-between gap-4 py-8`}>
           <Wordmark />
-          <p className="font-mono text-xs text-form">
-            End of job. Runs in your browser; nothing is uploaded.
-          </p>
-        </footer>
-      </div>
+          <Link
+            href="/studio"
+            className="rounded-sm text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            Studio
+          </Link>
+        </div>
+      </footer>
     </div>
   )
 }
