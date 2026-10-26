@@ -21,14 +21,20 @@ import {
   CHARSETS,
   DEFAULT_IMAGE_OPTIONS,
   imageToAscii,
+  isLightColor,
   loadImageFile,
 } from "@/lib/image-to-ascii"
 import {
   COLOR_THEMES,
   DEFAULT_SETTINGS,
+  FRAME_TEMPLATES,
+  type ColorTheme,
   type GeneratorSettings,
 } from "@/lib/ascii-data"
 import { renderAsciiToCanvas } from "@/lib/render-ascii"
+import { banner } from "@/lib/banner"
+import { useIsMobile } from "@/hooks/use-mobile"
+import { PresetSwatches, SelectRow, SwitchRow } from "@/components/controls"
 
 // Printed lines are 1.2em tall and JetBrains Mono advances 0.6em,
 // so one character cell is half as wide as it is tall.
@@ -126,7 +132,10 @@ export function HeroPrinter() {
   } | null>(null)
   const source = upload ?? sample
 
-  const [columns, setColumns] = useState(76)
+  // Phones print narrower so the sample stays legible; a slider move wins after that
+  const isMobile = useIsMobile()
+  const [pickedColumns, setColumns] = useState<number | null>(null)
+  const columns = pickedColumns ?? (isMobile ? 48 : 76)
   const [charset, setCharset] = useState("standard")
   const [invert, setInvert] = useState(false)
   const [dragging, setDragging] = useState(false)
@@ -159,10 +168,12 @@ export function HeroPrinter() {
     }
   }, [])
 
-  // Old share links pointed at "/": hand them to the studio
+  // Old share links pointed at "/": hand them to the studio. Section anchors
+  // like #output name an element on this page and stay here.
   useEffect(() => {
-    if (window.location.hash.length > 1) {
-      window.location.replace("/studio" + window.location.hash)
+    const hash = window.location.hash
+    if (hash.length > 1 && !document.getElementById(hash.slice(1))) {
+      window.location.replace("/studio" + hash)
     }
   }, [])
 
@@ -216,7 +227,7 @@ export function HeroPrinter() {
   return (
     <section className="px-5 pt-10 pb-16 sm:px-8 lg:px-12 lg:pt-8 lg:pb-24">
       {/* The job's banner page, set in its own letters */}
-      <div className="@container">
+      <div className="@container hidden sm:block">
         <pre
           aria-hidden="true"
           className="font-mono leading-[1.05] font-bold text-foreground select-none"
@@ -225,7 +236,7 @@ export function HeroPrinter() {
           {BANNER}
         </pre>
       </div>
-      <div className="mt-10 grid items-center gap-12 lg:mt-8 lg:grid-cols-12 lg:gap-14">
+      <div className="grid items-center gap-12 sm:mt-10 lg:mt-8 lg:grid-cols-12 lg:gap-14">
         <div className="lg:col-span-5">
           <h1 className="font-display text-[clamp(2.5rem,4.6vw,4.1rem)] leading-[0.98]">
             Print any photo as ASCII art.
@@ -246,7 +257,12 @@ export function HeroPrinter() {
             </Button>
           </div>
           <p className="mt-4 text-sm text-muted-foreground">
-            Or drop or paste an image anywhere on this page.
+            <span className="pointer-coarse:hidden">
+              Or drop or paste an image anywhere on this page.
+            </span>
+            <span className="hidden pointer-coarse:inline">
+              Or tap the sheet to pick a photo.
+            </span>
           </p>
         </div>
 
@@ -336,8 +352,13 @@ export function HeroPrinter() {
               />
             </div>
             <div className="flex items-center gap-2">
-              <Switch id="hero-invert" checked={invert} onCheckedChange={setInvert} />
-              <Label htmlFor="hero-invert" className="text-sm">
+              <Switch
+                id="hero-invert"
+                aria-labelledby="hero-invert-label"
+                checked={invert}
+                onCheckedChange={setInvert}
+              />
+              <Label id="hero-invert-label" htmlFor="hero-invert" className="text-sm">
                 Invert
               </Label>
             </div>
@@ -351,7 +372,7 @@ export function HeroPrinter() {
                     aria-pressed={charset === c.value}
                     onClick={() => setCharset(c.value)}
                     className={cn(
-                      "h-8 rounded-sm border px-3 text-sm transition-colors",
+                      "h-8 rounded-sm border px-3 text-sm transition-colors pointer-coarse:h-10",
                       charset === c.value
                         ? "border-primary bg-primary text-primary-foreground"
                         : "border-input bg-background hover:border-primary hover:text-foreground"
@@ -380,22 +401,7 @@ export function HeroPrinter() {
   )
 }
 
-// Banner-page lettering, each letter set in itself, like a line printer's job separator
-const GLYPHS: Record<string, string[]> = {
-  F: ["FFFFF", "F    ", "FFFF ", "F    ", "F    "],
-  A: [" AAA ", "A   A", "AAAAA", "A   A", "A   A"],
-  N: ["N   N", "NN  N", "N N N", "N  NN", "N   N"],
-  O: [" OOO ", "O   O", "O   O", "O   O", " OOO "],
-  L: ["L    ", "L    ", "L    ", "L    ", "LLLLL"],
-  D: ["DDDD ", "D   D", "D   D", "D   D", "DDDD "],
-}
-const BANNER = [0, 1, 2, 3, 4]
-  .map((row) =>
-    Array.from("FANFOLD")
-      .map((ch) => GLYPHS[ch][row])
-      .join(" ")
-  )
-  .join("\n")
+const BANNER = banner("FANFOLD")
 
 /** Sun over layered ridges: a second sample, so the report shows something new. */
 function drawLandscape(): HTMLCanvasElement {
@@ -447,130 +453,190 @@ export function PhotoPrint({ columns = 72 }: { columns?: number }) {
         : "",
     [mounted, dark, columns]
   )
+  // Size the type so every column fits the report column, capped at 12px
   return (
-    <pre
-      aria-label="A landscape photo printed in block characters"
-      className="m-0 font-mono text-[clamp(6px,1.5vw,12px)] leading-[1.2]"
-      style={{ minHeight: `${LINE * 15}em` }}
-    >
-      {text}
-    </pre>
+    <div className="@container">
+      <pre
+        aria-label="A landscape photo printed in block characters"
+        className="m-0 font-mono leading-[1.2]"
+        style={{
+          fontSize: `min(calc(100cqi / ${columns * 0.6}), 12px)`,
+          minHeight: `${LINE * 15}em`,
+        }}
+      >
+        {text}
+      </pre>
+    </div>
   )
 }
 
-// ─── Treatments: one print, six real renders from the export engine ───
+// ─── Prints that run when they scroll into view ───
 
-const theme = (name: string) => COLOR_THEMES.find((t) => t.name === name)!
-const colors = (name: string) => ({
-  foregroundColor: theme(name).foreground,
-  backgroundColor: theme(name).background,
-})
+export function PrintOnView({
+  rows,
+  className,
+  children,
+}: {
+  rows: number
+  className?: string
+  children: React.ReactNode
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    // Observe the unclipped outer box: Chrome counts the target's own clip-path,
+    // so a fully clipped element would never report as visible
+    const outer = ref.current
+    const el = outer?.firstElementChild as HTMLElement | null
+    if (!outer || !el || matchMedia("(prefers-reduced-motion: reduce)").matches)
+      return
+    // Only arm prints still below the fold; anything already on screen stays printed
+    if (outer.getBoundingClientRect().top < window.innerHeight) return
+    el.style.clipPath = "inset(0 0 100% 0)"
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return
+        io.disconnect()
+        el.style.clipPath = ""
+        el.classList.add("print-in")
+      },
+      { threshold: 0.25 }
+    )
+    io.observe(outer)
+    return () => io.disconnect()
+  }, [])
+  return (
+    <div ref={ref} className={className}>
+      <div
+        style={
+          {
+            "--print-rows": rows,
+            "--print-duration": `${Math.min(1.6, rows * 0.06)}s`,
+          } as React.CSSProperties
+        }
+      >
+        {children}
+      </div>
+    </div>
+  )
+}
 
-const TREATMENTS: {
-  name: string
-  note: string
-  settings: Partial<GeneratorSettings>
-}[] = [
-  {
-    name: "Ocean",
-    note: "Gradient ink at 45°",
-    settings: {
-      ...colors("Ocean"),
-      useGradient: true,
-      gradientColor1: theme("Ocean").gradient![0],
-      gradientColor2: theme("Ocean").gradient![1],
-    },
-  },
-  {
-    name: "Retro",
-    note: "Glow and scan lines",
-    settings: { ...colors("Retro"), glowEnabled: true, scanLinesEnabled: true },
-  },
-  {
-    name: "Nord",
-    note: "Terminal frame",
-    settings: { ...colors("Nord"), frameTemplate: "terminal" },
-  },
-  {
-    name: "Dracula",
-    note: "CRT curve and noise",
-    settings: { ...colors("Dracula"), crtEnabled: true, noiseEnabled: true },
-  },
-  {
-    name: "Classic",
-    note: "Polaroid frame",
-    settings: { ...colors("Classic"), frameTemplate: "polaroid" },
-  },
-  {
-    name: "Sunset",
-    note: "Double border and shadow",
-    settings: {
-      ...colors("Sunset"),
-      borderStyle: "double",
-      borderWidth: 4,
-      borderColor: theme("Sunset").foreground,
-      textShadowEnabled: true,
-    },
-  },
-]
+// ─── Try a finish: the export engine running live with studio controls ───
 
-export function TreatmentSheet() {
+const EFFECTS = [
+  ["glowEnabled", "Glow"],
+  ["scanLinesEnabled", "Scan lines"],
+  ["crtEnabled", "CRT curve"],
+  ["noiseEnabled", "Noise"],
+] as const
+
+export function FinishPicker() {
   const mounted = useMounted()
-  const refs = useRef<(HTMLCanvasElement | null)[]>([])
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  // Opens on the world's own paper; the louder presets are a click away
+  const [settings, setSettings] = useState<GeneratorSettings>(() => ({
+    ...DEFAULT_SETTINGS,
+    fontSize: 10,
+    lineHeight: LINE,
+    padding: 24,
+    foregroundColor: COLOR_THEMES[0].foreground,
+    backgroundColor: COLOR_THEMES[0].background,
+    scanLinesEnabled: true,
+  }))
+  const lightPaper = isLightColor(settings.backgroundColor)
+  const text = useMemo(
+    () =>
+      mounted
+        ? imageToAscii(
+            drawPlanet(),
+            { ...DEFAULT_IMAGE_OPTIONS, columns: 64 },
+            CHAR_ASPECT,
+            lightPaper
+          ).text
+        : "",
+    [mounted, lightPaper]
+  )
 
   useEffect(() => {
-    if (!mounted) return
+    if (!text) return
     let cancelled = false
-    const text = imageToAscii(
-      drawPlanet(),
-      { ...DEFAULT_IMAGE_OPTIONS, columns: 64 },
-      CHAR_ASPECT,
-      false
-    ).text
     // Wait for the web font so the canvas measures the real glyphs
     document.fonts.ready.then(() => {
-      if (cancelled) return
-      TREATMENTS.forEach((t, i) => {
-        const canvas = refs.current[i]
-        if (!canvas) return
-        renderAsciiToCanvas(canvas, text, {
-          ...DEFAULT_SETTINGS,
-          fontSize: 10,
-          lineHeight: LINE,
-          padding: 24,
-          pixelDensity: 2,
-          ...t.settings,
-        })
-      })
+      if (!cancelled && canvasRef.current)
+        renderAsciiToCanvas(canvasRef.current, text, settings)
     })
     return () => {
       cancelled = true
     }
-  }, [mounted])
+  }, [text, settings])
+
+  const update = <K extends keyof GeneratorSettings>(
+    key: K,
+    value: GeneratorSettings[K]
+  ) => setSettings((prev) => ({ ...prev, [key]: value }))
+
+  const isActive = (t: ColorTheme) =>
+    settings.foregroundColor === t.foreground &&
+    settings.backgroundColor === t.background
+  const pick = (t: ColorTheme) =>
+    setSettings((prev) => ({
+      ...prev,
+      foregroundColor: t.foreground,
+      backgroundColor: t.background,
+      useGradient: !!t.gradient,
+      gradientColor1: t.gradient?.[0] ?? prev.gradientColor1,
+      gradientColor2: t.gradient?.[1] ?? prev.gradientColor2,
+    }))
+
+  const readout = [
+    COLOR_THEMES.find(isActive)?.name ?? "Custom",
+    settings.useGradient && "gradient ink",
+    ...EFFECTS.filter(([key]) => settings[key]).map(([, label]) =>
+      label.toLowerCase()
+    ),
+    settings.frameTemplate !== "none" &&
+      `${FRAME_TEMPLATES.find((f) => f.value === settings.frameTemplate)?.label.toLowerCase()} frame`,
+  ]
+    .filter(Boolean)
+    .join(" · ")
 
   return (
-    <div className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
-      {TREATMENTS.map((t, i) => (
-        <figure
-          key={t.name}
-          className={cn(i === 0 && "sm:col-span-2 lg:row-span-2")}
-        >
-          <div className="bg-housing p-3 ring-1 ring-border sm:p-4">
-            <canvas
-              ref={(el) => {
-                refs.current[i] = el
-              }}
-              role="img"
-              aria-label={`${t.name} theme: ${t.note.toLowerCase()}`}
-              className="block aspect-[4/3] h-auto! w-full! object-contain"
+    <div className="grid gap-8 lg:grid-cols-12 lg:gap-12">
+      <figure className="lg:col-span-8">
+        <div className="grid min-h-72 place-items-center bg-housing p-4 ring-1 ring-border sm:p-8">
+          <canvas
+            ref={canvasRef}
+            role="img"
+            aria-label={`Live preview: ${readout}`}
+            className="block h-auto! max-h-[32rem] w-auto! max-w-full drop-shadow-[0_18px_28px_var(--shadow)]"
+          />
+        </div>
+        <figcaption className="mt-3 font-mono text-xs text-form" aria-live="polite">
+          {readout}
+        </figcaption>
+      </figure>
+
+      <div className="space-y-6 lg:col-span-4">
+        <div>
+          <p className="mb-2 text-xs text-muted-foreground">Colors</p>
+          <PresetSwatches isActive={isActive} onPick={pick} />
+        </div>
+        <div className="space-y-3.5">
+          {EFFECTS.map(([key, label]) => (
+            <SwitchRow
+              key={key}
+              label={label}
+              checked={settings[key]}
+              onChange={(v) => update(key, v)}
             />
-          </div>
-          <figcaption className="mt-3 flex items-baseline justify-between gap-3 text-sm">
-            <span className="font-medium">{t.name}</span>
-            <span className="font-mono text-xs text-form">{t.note}</span>
-          </figcaption>
-        </figure>
-      ))}
+          ))}
+        </div>
+        <SelectRow
+          label="Frame"
+          value={settings.frameTemplate}
+          options={FRAME_TEMPLATES}
+          onChange={(v) => update("frameTemplate", v)}
+        />
+      </div>
     </div>
   )
 }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-25T21:17:38.263642+00:00",
+  "generatedAt": "2026-10-25T21:52:35.514964+00:00",
   "title": "Design System: Fanfold",
   "extensions": {
     "colorMeta": {
@@ -21,7 +21,7 @@
       },
       "ink": {
         "role": "neutral",
-        "displayName": "Ribbon Ink",
+        "displayName": "Foreground Ink",
         "canonical": "oklch(0.24 0.014 150)",
         "tonalRamp": [
           "oklch(0.15 0.014 150)",
@@ -413,19 +413,34 @@
       {
         "name": "print-on-stage",
         "value": "drop-shadow(0 18px 28px var(--shadow))",
-        "purpose": "Rendered canvas resting in the preview housing (filter)."
+        "purpose": "Rendered canvas in a housing: studio preview, landing finish picker (filter)."
+      },
+      {
+        "name": "empty-sheet",
+        "value": "0 18px 28px var(--shadow)",
+        "purpose": "Blank 'Nothing to print yet' sheet on the studio stage."
       },
       {
         "name": "paper-edge",
         "value": "0 0 0 1px var(--border)",
-        "purpose": "Landing sheet outline against the desk."
+        "purpose": "Landing and 404 sheet outline against the desk."
+      },
+      {
+        "name": "header-rule",
+        "value": "0 1px 0 var(--border)",
+        "purpose": "1px rule under the sticky landing header and the 404 header; not depth."
       }
     ],
     "motion": [
       {
         "name": "print-feed",
-        "value": "clip-path inset(0 0 100% 0) to inset(0); steps(var(--print-rows), end); min(1.8s, rows * 0.045s)",
-        "purpose": "Signature row-by-row print reveal; disabled under reduced motion."
+        "value": "clip-path inset(0 0 100% 0) to inset(0); steps(var(--print-rows), end); hero min(1.8s, rows * 0.045s)",
+        "purpose": "Signature row-by-row print reveal; replays on hero source/charset/invert/theme change; disabled under reduced motion."
+      },
+      {
+        "name": "print-on-view",
+        "value": "IntersectionObserver threshold 0.25; min(1.6s, rows * 0.06s)",
+        "purpose": "Landing prints below the fold run print-feed once on scroll into view; prints on screen at load stay printed; off under reduced motion."
       },
       {
         "name": "state-transition",
@@ -501,11 +516,25 @@
       "css": ".ds-slider{width:240px;font-family:var(--font-archivo),sans-serif}.ds-slider-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;font-size:14px;font-weight:500;color:var(--foreground)}.ds-slider-head output{font-family:var(--font-mono),monospace;color:var(--form);font-variant-numeric:tabular-nums}.ds-track{position:relative;height:4px;background:var(--muted)}.ds-range{position:absolute;inset:0 60% 0 0;background:var(--primary)}.ds-thumb{position:absolute;left:40%;top:50%;width:14px;height:14px;transform:translate(-50%,-50%);border:2px solid var(--primary);border-radius:2px;background:var(--background);box-sizing:border-box}.ds-thumb:hover,.ds-thumb:focus-visible{box-shadow:0 0 0 1px color-mix(in oklch,var(--ring) 50%,transparent);outline:none}"
     },
     {
+      "name": "Switch Row",
+      "kind": "input",
+      "description": "Shared labelled switch; the visible switch is named by aria-labelledby.",
+      "html": "<div class=\"ds-swrow\"><span id=\"ds-sl\">Scan lines</span><button role=\"switch\" aria-checked=\"true\" aria-labelledby=\"ds-sl\" class=\"ds-switch\"><span></span></button></div>",
+      "css": ".ds-swrow{display:flex;align-items:center;justify-content:space-between;gap:12px;width:220px;min-height:24px;font-family:var(--font-archivo),sans-serif;font-size:12px;color:var(--muted-foreground)}.ds-switch{position:relative;width:24px;height:14px;padding:0;border:1px solid transparent;border-radius:3px;background:var(--input);cursor:pointer;transition:background-color .15s}.ds-switch span{position:absolute;top:0;left:0;width:12px;height:12px;border-radius:2px;background:var(--background);transition:transform .15s}.ds-switch[aria-checked=true]{background:var(--primary)}.ds-switch[aria-checked=true] span{transform:translateX(10px)}.ds-switch:focus-visible{outline:2px solid var(--ring);outline-offset:2px}"
+    },
+    {
+      "name": "Preset Swatches",
+      "kind": "chip",
+      "description": "Colour presets shown as their own ink '#@' on their own paper; gradient presets get a stripe.",
+      "html": "<div class=\"ds-presets\"><button class=\"ds-preset\" aria-pressed=\"true\"><span style=\"background:#f6f9f4;color:#1f2620\">#@</span>Fanfold</button><button class=\"ds-preset\" aria-pressed=\"false\"><span style=\"background:#0f172a;color:#e2e8f0\">#@</span>Classic</button></div>",
+      "css": ".ds-presets{display:grid;grid-template-columns:repeat(5,56px);gap:6px}.ds-preset{padding:0;border:0;background:none;text-align:left;font-family:var(--font-archivo),sans-serif;font-size:11px;color:var(--muted-foreground);cursor:pointer}.ds-preset span{display:grid;place-items:center;height:36px;margin-bottom:4px;font-family:var(--font-mono),monospace;font-size:12px;font-weight:700;box-shadow:0 0 0 1px var(--border)}.ds-preset:hover{color:var(--foreground)}.ds-preset:hover span{box-shadow:0 0 0 2px var(--ring)}.ds-preset[aria-pressed=true] span{box-shadow:0 0 0 2px var(--primary)}.ds-preset:focus-visible{outline:2px solid var(--ring);outline-offset:2px}"
+    },
+    {
       "name": "Landing Header",
       "kind": "nav",
-      "description": "Wordmark, text links, theme toggle, primary action over a tear line.",
+      "description": "Sticky header: wordmark, text links, theme toggle, primary action, 1px rule.",
       "html": "<header class=\"ds-nav\"><span class=\"ds-mark\">Fanfold</span><nav><a href=\"#\">How it works</a><a href=\"#\">Effects</a><a href=\"#\">Export</a><button class=\"ds-nav-cta\">Open studio</button></nav></header>",
-      "css": ".ds-nav{display:flex;align-items:center;justify-content:space-between;height:64px;padding:0 32px;background:var(--background);border-bottom:1px dashed color-mix(in oklch,var(--form) 55%,transparent);font-family:var(--font-archivo),sans-serif}.ds-mark{font-stretch:125%;font-weight:800;font-size:15px;letter-spacing:-0.02em;color:var(--foreground)}.ds-nav nav{display:flex;align-items:center;gap:8px}.ds-nav a{padding:4px 8px;border-radius:1.8px;font-size:14px;color:var(--muted-foreground);text-decoration:none}.ds-nav a:hover{color:var(--foreground)}.ds-nav a:focus-visible{outline:2px solid var(--ring);outline-offset:2px}.ds-nav-cta{height:32px;padding:0 10px;margin-left:4px;background:var(--primary);color:var(--primary-foreground);border:0;border-radius:0;font-size:14px;font-weight:500;cursor:pointer}.ds-nav-cta:hover{background:color-mix(in oklch,var(--primary) 88%,transparent)}"
+      "css": ".ds-nav{display:flex;align-items:center;justify-content:space-between;height:64px;padding:0 32px;background:var(--background);position:sticky;top:0;box-shadow:0 1px 0 var(--border);font-family:var(--font-archivo),sans-serif}.ds-mark{font-stretch:125%;font-weight:800;font-size:15px;letter-spacing:-0.02em;color:var(--foreground)}.ds-nav nav{display:flex;align-items:center;gap:8px}.ds-nav a{padding:4px 8px;border-radius:1.8px;font-size:14px;color:var(--muted-foreground);text-decoration:none}.ds-nav a:hover{color:var(--foreground)}.ds-nav a:focus-visible{outline:2px solid var(--ring);outline-offset:2px}.ds-nav-cta{height:32px;padding:0 10px;margin-left:4px;background:var(--primary);color:var(--primary-foreground);border:0;border-radius:0;font-size:14px;font-weight:500;cursor:pointer}.ds-nav-cta:hover{background:color-mix(in oklch,var(--primary) 88%,transparent)}"
     },
     {
       "name": "Greenbar Sheet",
@@ -519,12 +548,12 @@
       "kind": "custom",
       "description": "Perforated section divider with a page counter.",
       "html": "<div class=\"ds-tear\"><span>PAGE 0001</span></div>",
-      "css": ".ds-tear{position:relative;width:480px;height:1px;background-image:repeating-linear-gradient(to right,color-mix(in oklch,var(--form) 55%,transparent) 0 6px,transparent 6px 10px)}.ds-tear span{position:absolute;right:32px;top:50%;transform:translateY(-50%);padding:0 8px;background:var(--background);font-family:var(--font-mono),monospace;font-size:10px;color:var(--form);font-variant-numeric:tabular-nums}"
+      "css": ".ds-tear{position:relative;width:480px;height:1px;background-image:repeating-linear-gradient(to right,color-mix(in oklch,var(--form) 55%,transparent) 0 6px,transparent 6px 10px)}.ds-tear span{position:absolute;right:32px;top:50%;transform:translateY(-50%);padding:0 8px;background:var(--background);font-family:var(--font-mono),monospace;font-size:11px;color:var(--form);font-variant-numeric:tabular-nums}"
     }
   ],
   "narrative": {
     "northStar": "The Continuous Printout",
-    "overview": "Fanfold renders every surface as a sheet of line-printer output on green-bar fanfold paper. The page itself is the paper: a cool white strip with mint bands every three printed lines, sprocket-hole tractor margins down both edges, and perforated tear lines between sections that carry a page counter. The page sits on a darker desk tone, so the paper reads as an object you could tear off. Ink is near-black with a green cast. Form furniture (line numbers, readouts, captions, page counters) is printed in form green, the colour the paper mill printed on before the job ran.\n\nDensity follows the source: wide-set headings like the pre-printed form header, then mono output set on a strict line grid. The studio is the same paper inside an operator console. The text editor is green-bar paper with a line-number gutter, the preview sits in the printer housing, and settings are printed on plain card stock. Dark mode is the machine room after hours: sage form ink on carbon paper, darker housing, the same bars at low contrast.\n\nThe world rejects the neon terminal (green-on-black glow, glowing edges) and the generic SaaS page (purple gradients, glass cards, a centred hero over three feature boxes). Depth comes from paper on desk, never from light effects.",
+    "overview": "Fanfold renders every surface as a sheet of line-printer output on green-bar fanfold paper. The page itself is the paper: a cool white strip with mint bands every three printed lines, sprocket-hole tractor margins down both edges, and perforated tear lines between sections that carry a page counter. The page sits on a darker desk tone, so the paper reads as an object you could tear off. Ink is a near-black foreground with a green cast. Form furniture (line numbers, readouts, captions, page counters) is printed in form green, the colour the paper mill printed on before the job ran.\n\nDensity follows the source: wide-set headings like the pre-printed form header, then mono output set on a strict line grid. The studio is the same paper inside an operator console. The text editor is green-bar paper with a line-number gutter, the preview sits in the printer housing, and settings are printed on plain card stock. Dark mode is the machine room after hours: sage form ink on carbon paper, darker housing, the same bars at low contrast.\n\nThe world rejects the neon terminal (green-on-black glow, glowing edges) and the generic SaaS page (purple gradients, glass cards, a centred hero over three feature boxes). Depth comes from paper on desk, never from light effects.",
     "keyCharacteristics": [
       "Green-bar paper as the base surface: three-line mint bands keyed to a `--line` unit.",
       "Tractor-feed sprocket margins and perforated tear lines carry the structure.",
@@ -536,7 +565,7 @@
     "rules": [
       {
         "name": "The Form Ink Rule",
-        "body": "Anything a machine would print onto the form (line numbers, counts, dimensions, page labels, captions) is form green in mono with tabular figures. Content the user made is ribbon ink. Never swap them.",
+        "body": "Anything a machine would print onto the form (line numbers, counts, dimensions, page labels, captions) is form green in mono with tabular figures. Content the user made is foreground ink. Never swap them.",
         "section": "colors"
       },
       {

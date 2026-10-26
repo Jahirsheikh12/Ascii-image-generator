@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Archivo, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
@@ -23,6 +23,15 @@ export const metadata: Metadata = {
   },
   description:
     "Turn photos, text and templates into ASCII art right in your browser. Style it, then export PNG, JPEG, WebP or SVG, or share a link.",
+};
+
+// "cover" lets the studio's bottom tabs sit above the home indicator
+export const viewport: Viewport = {
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f8faf6" },
+    { media: "(prefers-color-scheme: dark)", color: "#151b17" },
+  ],
 };
 
 const DIRECTION_CONTRACT = `<!--
@@ -54,7 +63,11 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
-          <Toaster position="bottom-right" />
+          {/* On phones, lift toasts above the studio's bottom tab bar */}
+          <Toaster
+            position="bottom-right"
+            mobileOffset={{ bottom: "calc(4.5rem + env(safe-area-inset-bottom))" }}
+          />
         </ThemeProvider>
       </body>
     </html>

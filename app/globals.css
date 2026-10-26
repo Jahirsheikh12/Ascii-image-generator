@@ -148,6 +148,9 @@
   body {
     @apply bg-background text-foreground;
     caret-color: var(--primary);
+    /* viewport-fit=cover: keep content clear of notches in landscape */
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
   }
   ::selection {
     background: color-mix(in oklch, var(--primary) 24%, transparent);
