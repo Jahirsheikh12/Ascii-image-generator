@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-25T21:52:35.514964+00:00",
+  "generatedAt": "2026-10-26T08:15:54.406488+00:00",
   "title": "Design System: Fanfold",
   "extensions": {
     "colorMeta": {
@@ -229,21 +229,6 @@
           "oklch(0.95 0.01 150)"
         ]
       },
-      "desk": {
-        "role": "neutral",
-        "displayName": "Desk",
-        "canonical": "oklch(0.875 0.012 150)",
-        "tonalRamp": [
-          "oklch(0.15 0.012 150)",
-          "oklch(0.27 0.012 150)",
-          "oklch(0.39 0.012 150)",
-          "oklch(0.51 0.012 150)",
-          "oklch(0.63 0.012 150)",
-          "oklch(0.75 0.012 150)",
-          "oklch(0.86 0.012 150)",
-          "oklch(0.95 0.012 150)"
-        ]
-      },
       "destructive": {
         "role": "error",
         "displayName": "Fault Red",
@@ -321,7 +306,7 @@
       },
       "dark-bar": {
         "role": "secondary",
-        "displayName": "Carbon Bar",
+        "displayName": "Carbon Mint",
         "canonical": "oklch(0.235 0.026 152)",
         "tonalRamp": [
           "oklch(0.15 0.026 152)",
@@ -348,35 +333,20 @@
           "oklch(0.86 0.01 155)",
           "oklch(0.95 0.01 155)"
         ]
-      },
-      "dark-desk": {
-        "role": "neutral",
-        "displayName": "Machine-Room Floor",
-        "canonical": "oklch(0.135 0.008 155)",
-        "tonalRamp": [
-          "oklch(0.15 0.008 155)",
-          "oklch(0.27 0.008 155)",
-          "oklch(0.39 0.008 155)",
-          "oklch(0.51 0.008 155)",
-          "oklch(0.63 0.008 155)",
-          "oklch(0.75 0.008 155)",
-          "oklch(0.86 0.008 155)",
-          "oklch(0.95 0.008 155)"
-        ]
       }
     },
     "typographyMeta": {
       "display": {
         "displayName": "Display",
-        "purpose": "The single landing h1; closing CTA steps to clamp(2.2rem,5vw,4.5rem)."
+        "purpose": "The landing h1 only (800)."
       },
       "headline": {
         "displayName": "Headline",
-        "purpose": "Landing section headings, short declaratives."
+        "purpose": "Landing section headings at 700; the 404 h1 at this size is 800; closing CTA steps to clamp(2.2rem,5vw,4.5rem)."
       },
       "title": {
         "displayName": "Title",
-        "purpose": "Report row titles, panel headings, drop overlay."
+        "purpose": "Report row titles, panel headings, drop overlay, empty state (700)."
       },
       "body": {
         "displayName": "Lead Body",
@@ -403,12 +373,12 @@
       {
         "name": "sheet-lift",
         "value": "0 1px 0 var(--border), 0 24px 48px -28px var(--shadow)",
-        "purpose": "Landing hero printout sheet lifting off the page."
+        "purpose": "Hero printout card."
       },
       {
         "name": "drop-sheet",
         "value": "0 24px 60px -30px var(--shadow)",
-        "purpose": "Studio drag-and-drop sheet."
+        "purpose": "Studio drop overlay card."
       },
       {
         "name": "print-on-stage",
@@ -421,14 +391,9 @@
         "purpose": "Blank 'Nothing to print yet' sheet on the studio stage."
       },
       {
-        "name": "paper-edge",
-        "value": "0 0 0 1px var(--border)",
-        "purpose": "Landing and 404 sheet outline against the desk."
-      },
-      {
         "name": "header-rule",
         "value": "0 1px 0 var(--border)",
-        "purpose": "1px rule under the sticky landing header and the 404 header; not depth."
+        "purpose": "1px rule under the landing and 404 headers; not depth."
       }
     ],
     "motion": [
@@ -537,74 +502,75 @@
       "css": ".ds-nav{display:flex;align-items:center;justify-content:space-between;height:64px;padding:0 32px;background:var(--background);position:sticky;top:0;box-shadow:0 1px 0 var(--border);font-family:var(--font-archivo),sans-serif}.ds-mark{font-stretch:125%;font-weight:800;font-size:15px;letter-spacing:-0.02em;color:var(--foreground)}.ds-nav nav{display:flex;align-items:center;gap:8px}.ds-nav a{padding:4px 8px;border-radius:1.8px;font-size:14px;color:var(--muted-foreground);text-decoration:none}.ds-nav a:hover{color:var(--foreground)}.ds-nav a:focus-visible{outline:2px solid var(--ring);outline-offset:2px}.ds-nav-cta{height:32px;padding:0 10px;margin-left:4px;background:var(--primary);color:var(--primary-foreground);border:0;border-radius:0;font-size:14px;font-weight:500;cursor:pointer}.ds-nav-cta:hover{background:color-mix(in oklch,var(--primary) 88%,transparent)}"
     },
     {
-      "name": "Greenbar Sheet",
+      "name": "Printout Sheet",
       "kind": "custom",
-      "description": "Signature printout: tractor margins, green-bar paper, form-green line gutter, mono output, stepped print reveal.",
-      "html": "<figure class=\"ds-sheet-wrap\"><figcaption class=\"ds-cap\"><span>planet.png (sample)</span><span>76 × 5 · Standard</span></figcaption><div class=\"ds-sheet\"><div class=\"ds-tractor ds-l\"></div><div class=\"ds-paper\"><pre class=\"ds-nums\">1\n2\n3\n4\n5</pre><pre class=\"ds-out\">      .:-=+*#%@@%#*+=-:.\n   .-+#@@@@@@@@@@@@@@#+-.\n  :*@@@@@@@@@@@@@@@@@@@@*:\n   .-+#@@@@@@@@@@@@@@#+-.\n      .:-=+*#%@@%#*+=-:.</pre></div><div class=\"ds-tractor ds-r\"></div></div></figure>",
-      "css": ".ds-sheet-wrap{margin:0;width:420px}.ds-cap{display:flex;justify-content:space-between;margin-bottom:10px;font-family:var(--font-mono),monospace;font-size:12px;color:var(--form);font-variant-numeric:tabular-nums}.ds-sheet{display:grid;grid-template-columns:28px 1fr 28px;background:var(--background);box-shadow:0 0 0 1px var(--border),0 1px 0 var(--border),0 24px 48px -28px var(--shadow);cursor:pointer}.ds-sheet:hover{box-shadow:0 0 0 2px var(--primary),0 24px 48px -28px var(--shadow)}.ds-tractor{background-image:radial-gradient(circle at 50% 50%,var(--desk) 0 4.5px,color-mix(in oklch,var(--desk) 60%,var(--border)) 4.5px 5.5px,transparent 6px);background-size:100% 24px;background-repeat:repeat-y}.ds-l{border-right:1px dashed var(--input)}.ds-r{border-left:1px dashed var(--input)}.ds-paper{--line:1.2em;display:flex;padding:2.4em 1.2em;font-family:var(--font-mono),monospace;font-size:12px;line-height:1.2;background-image:repeating-linear-gradient(to bottom,var(--bar) 0 calc(var(--line)*3),transparent calc(var(--line)*3) calc(var(--line)*6));background-size:100% calc(var(--line)*6);background-origin:content-box;animation:ds-feed .5s steps(5,end) both}.ds-nums{margin:0 .6em 0 0;width:2.4em;text-align:right;color:color-mix(in oklch,var(--form) 75%,transparent);font-variant-numeric:tabular-nums}.ds-out{margin:0;color:var(--foreground)}@keyframes ds-feed{from{clip-path:inset(0 0 100% 0)}to{clip-path:inset(0)}}@media (prefers-reduced-motion:reduce){.ds-paper{animation:none}}"
+      "description": "Signature: square card-stock sheet, 1px ring, soft lift, form-green line gutter, mono output, stepped print reveal.",
+      "html": "<figure class=\"ds-sheet-wrap\"><figcaption class=\"ds-cap\"><span>planet.png (sample)</span><span>76 × 5 · Standard</span></figcaption><div class=\"ds-sheet\" tabindex=\"0\"><div class=\"ds-print\"><pre class=\"ds-nums\">1\n2\n3\n4\n5</pre><pre class=\"ds-out\">      .:-=+*#%@@%#*+=-:.\n   .-+#@@@@@@@@@@@@@@#+-.\n  :*@@@@@@@@@@@@@@@@@@@@*:\n   .-+#@@@@@@@@@@@@@@#+-.\n      .:-=+*#%@@%#*+=-:.</pre></div></div></figure>",
+      "css": ".ds-sheet-wrap{margin:0;width:420px}.ds-cap{display:flex;justify-content:space-between;margin-bottom:10px;font-family:var(--font-mono),monospace;font-size:12px;color:var(--form);font-variant-numeric:tabular-nums}.ds-sheet{background:var(--card);border-radius:0;box-shadow:0 0 0 1px var(--border),0 24px 48px -28px var(--shadow);cursor:pointer;transition:box-shadow .15s}.ds-sheet:hover{box-shadow:0 0 0 1px color-mix(in oklch,var(--primary) 40%,transparent),0 24px 48px -28px var(--shadow)}.ds-sheet:focus-visible{outline:2px solid var(--ring);outline-offset:2px}.ds-print{display:flex;padding:1.6em 1.2em;font-family:var(--font-mono),monospace;font-size:12px;line-height:1.2;animation:ds-feed .5s steps(5,end) both}.ds-nums{margin:0 .6em 0 0;width:2.4em;text-align:right;color:color-mix(in oklch,var(--form) 75%,transparent);font-variant-numeric:tabular-nums}.ds-out{margin:0;color:var(--foreground)}@keyframes ds-feed{from{clip-path:inset(0 0 100% 0)}to{clip-path:inset(0)}}@media (prefers-reduced-motion:reduce){.ds-print{animation:none}}"
     },
     {
       "name": "Tear Line",
       "kind": "custom",
-      "description": "Perforated section divider with a page counter.",
-      "html": "<div class=\"ds-tear\"><span>PAGE 0001</span></div>",
-      "css": ".ds-tear{position:relative;width:480px;height:1px;background-image:repeating-linear-gradient(to right,color-mix(in oklch,var(--form) 55%,transparent) 0 6px,transparent 6px 10px)}.ds-tear span{position:absolute;right:32px;top:50%;transform:translateY(-50%);padding:0 8px;background:var(--background);font-family:var(--font-mono),monospace;font-size:11px;color:var(--form);font-variant-numeric:tabular-nums}"
+      "description": "Thin unlabelled perforation between landing sections.",
+      "html": "<div class=\"ds-tear\"></div>",
+      "css": ".ds-tear{width:480px;height:1px;background-image:repeating-linear-gradient(to right,color-mix(in oklch,var(--form) 55%,transparent) 0 6px,transparent 6px 10px)}"
     }
   ],
   "narrative": {
-    "northStar": "The Continuous Printout",
-    "overview": "Fanfold renders every surface as a sheet of line-printer output on green-bar fanfold paper. The page itself is the paper: a cool white strip with mint bands every three printed lines, sprocket-hole tractor margins down both edges, and perforated tear lines between sections that carry a page counter. The page sits on a darker desk tone, so the paper reads as an object you could tear off. Ink is a near-black foreground with a green cast. Form furniture (line numbers, readouts, captions, page counters) is printed in form green, the colour the paper mill printed on before the job ran.\n\nDensity follows the source: wide-set headings like the pre-printed form header, then mono output set on a strict line grid. The studio is the same paper inside an operator console. The text editor is green-bar paper with a line-number gutter, the preview sits in the printer housing, and settings are printed on plain card stock. Dark mode is the machine room after hours: sage form ink on carbon paper, darker housing, the same bars at low contrast.\n\nThe world rejects the neon terminal (green-on-black glow, glowing edges) and the generic SaaS page (purple gradients, glass cards, a centred hero over three feature boxes). Depth comes from paper on desk, never from light effects.",
+    "northStar": "The Clean Printout",
+    "overview": "Fanfold is a line printer for ASCII art, shown on clean paper. The printed output is the only texture in the system. Surfaces are plain cool paper in light mode and carbon in dark. The printer's character lives in four places: the wide, form-printed headings; form-green line numbers and readouts; the stepped row-by-row print reveal; and thin perforated tear lines between landing sections. Ink is a near-black foreground with a green cast. Form furniture (line numbers, counts, sizes, captions) is printed in form green, the colour of a pre-printed form.\n\nThe look is quiet and premium: generous section spacing, one heavy anchor per page, hairline rulings, and a single soft shadow under the sheets that hold a print. The studio is an operator console on the same paper. The text editor carries a line-number gutter on a 20px rhythm, the preview sits in a slightly darker printer housing, and settings sit on card stock. Dark mode is the machine room after hours: sage form ink on carbon.\n\nThe world rejects the neon terminal (green-on-black glow, glowing edges) and the generic SaaS page (purple gradients, glass cards, a centred hero over three feature boxes). It also no longer uses decorative paper texture: no green-bar stripes, no sprocket margins, no desk border, no page counters.",
     "keyCharacteristics": [
-      "Green-bar paper as the base surface: three-line mint bands keyed to a `--line` unit.",
-      "Tractor-feed sprocket margins and perforated tear lines carry the structure.",
-      "Form green for every machine-printed annotation: line numbers, counters, readouts.",
-      "Wide (125% width) heavy Archivo for headings; JetBrains Mono for anything printed.",
+      "Plain paper surfaces; the print is the only texture.",
+      "Form green for every machine-printed annotation: line numbers, counts, readouts, captions.",
+      "Wide (125% width) Archivo for headings, bold at 700, with only the page h1 at 800; JetBrains Mono for anything printed.",
+      "Thin dashed perforations between landing sections, with no labels.",
       "Square corners on buttons and sheets; near-square hairline corners on small controls.",
       "Motion is a stepped carriage advance: output appears row by row, never fades in."
     ],
     "rules": [
       {
         "name": "The Form Ink Rule",
-        "body": "Anything a machine would print onto the form (line numbers, counts, dimensions, page labels, captions) is form green in mono with tabular figures. Content the user made is foreground ink. Never swap them.",
+        "body": "Anything a machine would print onto the form (line numbers, counts, dimensions, captions, the banner) is form green in mono with tabular figures. Content the user made is foreground ink. Never swap them.",
         "section": "colors"
       },
       {
-        "name": "The Bars Are Paper Rule",
-        "body": "Mint appears only as green-bar banding inside the pattern, keyed to the text's own line height. A mint block used as a card background breaks the paper.",
+        "name": "The Only Texture Rule",
+        "body": "Surfaces are flat paper, card or housing. Pattern exists only in the printed ASCII and the perforated tear line. No stripes, punched margins or decorative fills.",
         "section": "colors"
       },
       {
-        "name": "The Wide Header Rule",
-        "body": "Only headings use the 125% width display cut. Body, labels and controls stay at normal width.",
+        "name": "The One Anchor Rule",
+        "body": "Only the page's h1 sets the display cut at 800. Every other display heading stays at 700, and body, labels and controls stay at normal width.",
         "section": "typography"
       },
       {
         "name": "The Line Grid Rule",
-        "body": "Mono output always sits at 1.2 line height, and any green-bar behind it sets `--line` to that same line height (1.2em, 20px in the editor, 24px on the landing page). Bars and text must stay in phase.",
+        "body": "Printed output sits at 1.2 line height. A line-number gutter shares its text's exact line height (1.2em on the hero, 20px in the editor) so numbers and rows stay in phase.",
         "section": "typography"
       },
       {
         "name": "The Paper Lift Rule",
-        "body": "A shadow means paper resting above the housing or desk. It is soft, it falls downward, and it uses a negative spread. Buttons, chips, panels and controls never cast one.",
+        "body": "A shadow means a sheet with a print on it resting above the surface. It is soft, it falls downward, and it uses a negative spread where the sheet sits on the page. Buttons, chips, panels and controls never cast one.",
         "section": "elevation"
       }
     ],
     "dos": [
-      "Do set every printed surface on green-bar paper with `--line` equal to the text's line height, so a band always spans three printed lines.",
-      "Do print machine annotations (line numbers, counts, sizes, page labels) in form-green JetBrains Mono with tabular figures.",
-      "Do separate major sections with a perforated tear line, numbered PAGE 000N where it ends a page.",
+      "Do keep surfaces plain paper, card or housing, and let the printed ASCII be the texture.",
+      "Do print machine annotations (line numbers, counts, sizes, captions) in form-green JetBrains Mono with tabular figures.",
+      "Do separate landing sections with a thin, unlabelled perforated tear line.",
+      "Do keep a line-number gutter on the same line height as its text.",
       "Do keep buttons and sheets square (0px), and keep small controls at 3px or less.",
       "Do show real rendered output from the engine on every surface. Never show a picture of ASCII.",
       "Do reveal new output with the stepped, row-by-row print reveal, and drop it under reduced motion.",
-      "Do keep both modes: paper on desk in light, sage form ink on carbon in dark."
+      "Do keep both modes: cool paper in light, sage form ink on carbon in dark."
     ],
     "donts": [
-      "Don't add glow, neon green-on-black, or glowing edges to the interface. The neon terminal is a rejected look.",
+      "Don't add green-bar stripes, sprocket-hole margins, a desk border or page counters. They were removed for a cleaner look.",
+      "Don't add glow, neon green-on-black, or glowing edges to the interface.",
       "Don't use purple gradients, glass cards, or a centred hero above three feature boxes.",
-      "Don't use gradients as decoration. Gradients are allowed only where they are the paper's own mechanism: the green-bar bands, sprocket holes, perforation and transparency checkerboard.",
-      "Don't give buttons, chips or panels a shadow. Shadows belong to paper lifting off the desk.",
-      "Don't fill a card or panel with mint-bar colour. Mint exists only as banding.",
-      "Don't use the wide display cut for body text, labels or controls.",
+      "Don't use gradients as decoration. The perforation and the transparency checkerboard are the only interface patterns.",
+      "Don't give buttons, chips or panels a shadow. Shadows belong to sheets holding a print.",
+      "Don't set any heading other than the page h1 at 800, or use the wide display cut for body, labels or controls.",
       "Don't fade or slide output in. The printer advances in steps."
     ]
   }

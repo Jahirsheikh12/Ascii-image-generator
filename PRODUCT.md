@@ -53,4 +53,6 @@ None. No users, testimonials, metrics, press, or pricing exist. Never fabricate 
 
 Name: Fanfold. Visual world: Greenbar Printout (line-printer output on green-bar fanfold paper), chosen 2026-10-26. Code-led builds.
 
+On 2026-10-26 the user asked for a cleaner, more premium look: no green-bar stripes anywhere (landing, 404 and studio), no sprocket-hole margins, no desk border and no PAGE labels. Thin perforated tear lines between landing sections stay. The printer character now lives in the type, motion, line numbers and tear lines.
+
 The user rejected these looks, even if polished: hacker/Matrix cliché (neon green on black, glowing terminal edges), generic SaaS (purple gradients, glass cards, centered hero plus three feature boxes), toy-like/childish, and cold corporate.

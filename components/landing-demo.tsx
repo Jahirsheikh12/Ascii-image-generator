@@ -45,18 +45,19 @@ const noop = () => () => {}
 const useMounted = () => useSyncExternalStore(noop, () => true, () => false)
 
 const STARS = [
-  [58, 52, 4], [540, 70, 5], [596, 368, 4], [96, 388, 5],
-  [470, 26, 3], [24, 236, 4], [612, 196, 3], [300, 410, 3],
+  [58, 52, 4], [540, 70, 5], [596, 318, 4], [96, 300, 5],
+  [470, 26, 3], [24, 236, 4], [612, 196, 3], [300, 326, 3],
 ] as const
 
 /** A lit, ringed planet drawn on a canvas: the sample every visitor sees first. */
 function drawPlanet(): HTMLCanvasElement {
   const c = document.createElement("canvas")
   c.width = 640
-  c.height = 440
+  // Cropped close to the planet so prints carry few blank rows
+  c.height = 340
   const ctx = c.getContext("2d")!
   const cx = 320
-  const cy = 220
+  const cy = 170
   const r = 128
 
   ctx.fillStyle = "#6b6b6b"
@@ -230,7 +231,7 @@ export function HeroPrinter() {
       <div className="@container hidden sm:block">
         <pre
           aria-hidden="true"
-          className="font-mono leading-[1.05] font-bold text-foreground select-none"
+          className="font-mono leading-[1.05] font-bold text-form/60 select-none"
           style={{ fontSize: "min(calc(100cqi / 28.6), 22px)" }}
         >
           {BANNER}
@@ -287,18 +288,16 @@ export function HeroPrinter() {
               }
             }}
             className={cn(
-              "relative grid cursor-pointer grid-cols-[22px_1fr_22px] bg-background ring-1 ring-border transition-shadow [--tractors:44px] sm:grid-cols-[28px_1fr_28px] sm:[--tractors:56px]",
+              "relative cursor-pointer overflow-hidden bg-card ring-1 ring-border transition-shadow hover:ring-primary/40",
               "shadow-[0_1px_0_var(--border),0_24px_48px_-28px_var(--shadow)]",
               dragging && "ring-2 ring-primary"
             )}
           >
-            <div aria-hidden="true" className="tractor border-r border-dashed border-input" />
             <div
-              className="greenbar min-w-0 overflow-hidden [--line:1.2em] [background-origin:content-box]"
               style={{
-                // text + 3em line-number gutter + 1.2em side margins
-                fontSize: `calc((100cqi - var(--tractors)) / ${columns * 0.6 + 5.4})`,
-                padding: "2.4em 1.2em 2.4em 0",
+                // 1.2em margins + 3em line-number gutter around the text
+                fontSize: `calc(100cqi / ${columns * 0.6 + 5.4})`,
+                padding: "1.6em 1.2em",
               }}
             >
               <div
@@ -321,7 +320,6 @@ export function HeroPrinter() {
                 <pre className="m-0 text-foreground">{result?.text}</pre>
               </div>
             </div>
-            <div aria-hidden="true" className="tractor border-l border-dashed border-input" />
 
             {dragging && (
               <div className="pointer-events-none absolute inset-0 grid place-items-center bg-background/85">
@@ -409,13 +407,9 @@ function drawLandscape(): HTMLCanvasElement {
   c.width = 640
   c.height = 300
   const ctx = c.getContext("2d")!
-  const sky = ctx.createLinearGradient(0, 0, 0, 300)
-  // A darker sky so the white sun reads on light and dark paper alike
-  sky.addColorStop(0, "#5e5e5e")
-  sky.addColorStop(1, "#d6d6d6")
-  ctx.fillStyle = sky
-  ctx.fillRect(0, 0, 640, 300)
-  ctx.fillStyle = "#ffffff"
+  // The sky stays transparent, so it prints as clean paper; a mid-grey sun
+  // reads on light and dark paper alike
+  ctx.fillStyle = "#9a9a9a"
   ctx.beginPath()
   ctx.arc(430, 120, 52, 0, Math.PI * 2)
   ctx.fill()
@@ -435,7 +429,7 @@ function drawLandscape(): HTMLCanvasElement {
   return c
 }
 
-// ─── A second photo printed in block characters, for the "ways in" report ───
+// ─── A second photo printed, for the "ways in" report ───
 
 export function PhotoPrint({ columns = 72 }: { columns?: number }) {
   const mounted = useMounted()
@@ -446,7 +440,7 @@ export function PhotoPrint({ columns = 72 }: { columns?: number }) {
       mounted
         ? imageToAscii(
             drawLandscape(),
-            { ...DEFAULT_IMAGE_OPTIONS, columns, charset: "blocks" },
+            { ...DEFAULT_IMAGE_OPTIONS, columns },
             CHAR_ASPECT,
             !dark
           ).text
@@ -457,7 +451,7 @@ export function PhotoPrint({ columns = 72 }: { columns?: number }) {
   return (
     <div className="@container">
       <pre
-        aria-label="A landscape photo printed in block characters"
+        aria-label="A landscape photo printed as ASCII"
         className="m-0 font-mono leading-[1.2]"
         style={{
           fontSize: `min(calc(100cqi / ${columns * 0.6}), 12px)`,
@@ -540,7 +534,8 @@ export function FinishPicker() {
     padding: 24,
     foregroundColor: COLOR_THEMES[0].foreground,
     backgroundColor: COLOR_THEMES[0].background,
-    scanLinesEnabled: true,
+    // A finish is on from the start: no stripes, no window chrome
+    frameTemplate: "polaroid",
   }))
   const lightPaper = isLightColor(settings.backgroundColor)
   const text = useMemo(

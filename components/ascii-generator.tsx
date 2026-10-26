@@ -118,7 +118,7 @@ function downloadBlob(blob: Blob, filename: string) {
   setTimeout(() => URL.revokeObjectURL(url), 0)
 }
 
-// Editor line metrics: bars span three lines, like the paper
+// Editor line height, shared by the text and its line-number gutter
 const EDITOR_LINE = 20
 
 // Tablets and small laptops get two panes; three only fit from 1280px
@@ -654,7 +654,7 @@ export default function AsciiGenerator() {
         </div>
       </details>
 
-      {/* Text, on green-bar paper with a line-number gutter */}
+      {/* Text, with a line-number gutter */}
       <div className="relative flex min-h-0 flex-1 bg-background">
         <div
           ref={gutterRef}
@@ -678,7 +678,7 @@ export default function AsciiGenerator() {
               gutterRef.current.scrollTop = e.currentTarget.scrollTop
           }}
           spellCheck={false}
-          className="ascii-textarea greenbar size-full resize-none border-none bg-local px-4 py-[20px] font-mono text-[13px] text-foreground pointer-coarse:text-base outline-none placeholder:text-muted-foreground [--line:20px] [background-origin:content-box]"
+          className="ascii-textarea size-full resize-none border-none bg-transparent px-4 py-[20px] font-mono text-[13px] text-foreground pointer-coarse:text-base outline-none placeholder:text-muted-foreground"
           style={{ lineHeight: `${EDITOR_LINE}px` }}
           placeholder="Type or paste ASCII art here…"
         />
@@ -1131,7 +1131,7 @@ export default function AsciiGenerator() {
                 </Button>
               </div>
 
-              <dl className="greenbar divide-y divide-border/60 font-mono text-[11px] ring-1 ring-border [--line:28px]">
+              <dl className="divide-y divide-border/60 font-mono text-[11px] ring-1 ring-border">
                 {[
                   ["Layout size", `${previewDims.width} × ${previewDims.height} px`],
                   ["Exported pixels", `${actualW} × ${actualH} px`],
@@ -1163,7 +1163,7 @@ export default function AsciiGenerator() {
       <div className="flex h-dvh flex-col bg-background" aria-busy="true">
         <div className="h-12 border-b border-border" />
         <div className="grid flex-1 grid-cols-1 md:grid-cols-[28%_1fr_300px]">
-          <div className="greenbar border-r border-border [--line:20px]" />
+          <div className="border-r border-border bg-background" />
           <div className="bg-housing" />
           <div className="hidden border-l border-border bg-card md:block" />
         </div>
@@ -1487,16 +1487,12 @@ export default function AsciiGenerator() {
               if (file) importFile(file)
             }}
           >
-            <div className="pointer-events-none grid w-full max-w-md grid-cols-[24px_1fr_24px] bg-background shadow-[0_24px_60px_-30px_var(--shadow)] ring-2 ring-primary">
-              <div className="tractor border-r border-dashed border-input" />
-              <div className="greenbar px-6 py-12 text-center [--line:24px]">
-                <ImageIcon className="mx-auto mb-4 size-8 text-primary" />
-                <p className="font-display text-2xl">Release to print</p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Photos convert to ASCII. Text files load as they are.
-                </p>
-              </div>
-              <div className="tractor border-l border-dashed border-input" />
+            <div className="pointer-events-none w-full max-w-md bg-card px-6 py-12 text-center shadow-[0_24px_60px_-30px_var(--shadow)] ring-2 ring-primary">
+              <ImageIcon className="mx-auto mb-4 size-8 text-primary" />
+              <p className="font-display text-2xl">Release to print</p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Photos convert to ASCII. Text files load as they are.
+              </p>
             </div>
           </div>
         )}

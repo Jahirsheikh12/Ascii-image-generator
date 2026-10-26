@@ -176,32 +176,7 @@
   }
 }
 
-/* ─── Greenbar paper ───
-   --line (set by the element or an ancestor) is one printed line;
-   a bar spans three lines, like real fanfold. */
-.greenbar {
-  background-image: repeating-linear-gradient(
-    to bottom,
-    var(--bar) 0 calc(var(--line, 20px) * 3),
-    transparent calc(var(--line, 20px) * 3) calc(var(--line, 20px) * 6)
-  );
-  /* One period per tile, so bars stay in phase above a content-box origin */
-  background-size: 100% calc(var(--line, 20px) * 6);
-}
-
-/* Sprocket margin: punched holes show the desk through the paper */
-.tractor {
-  background-image: radial-gradient(
-    circle at 50% 50%,
-    var(--desk) 0 4.5px,
-    color-mix(in oklch, var(--desk) 60%, var(--border)) 4.5px 5.5px,
-    transparent 6px
-  );
-  background-size: 100% 24px;
-  background-repeat: repeat-y;
-}
-
-/* Perforated tear line between sheets */
+/* Perforated tear line between sections */
 .perforation {
   background-image: repeating-linear-gradient(
     to right,
@@ -217,9 +192,13 @@
 .font-display {
   font-family: var(--font-archivo);
   font-stretch: 125%;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.02em;
   text-wrap: balance;
+}
+/* The page's one heavy anchor */
+h1.font-display {
+  font-weight: 800;
 }
 
 .tabular {
